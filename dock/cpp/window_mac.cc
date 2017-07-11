@@ -4,7 +4,7 @@
 
 #include <nan.h>
 
-namespace dock {
+namespace window_mac {
 
   void HelloMac(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     // first parameter
@@ -19,5 +19,5 @@ namespace dock {
     exports -> Set(Nan::New("hello_mac").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(HelloMac) -> GetFunction());
   }
 
-  NODE_MODULE(hello, Init);
+  NODE_MODULE(dock_mac, Init);
 }

@@ -78,16 +78,21 @@ ipc.on('async-message', function (event, arg) {
 });
 
 ipc.on('sync-message', function (event, arg) {
+  var hwnd = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
+  // var rect = dock.WinWindow.getWindowRect(hwnd);
+  // dock.WinWindow.setForegroundWindow(hwnd);
+  // var json = JSON.stringify(rect);
+  event.returnValue = dock.WinWindow.isWindowVisible(hwnd);
   mainWindow.setPosition(100, 100);
 });
 
-setTimeout(function () {
-  const hwnd1 = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
-  const hwnd2 = dock.WinWindow.findWindowHwnd(null, "RingCentral for Skype for Business");
+// setTimeout(function () {
+//   const hwnd1 = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
+//   const hwnd2 = dock.WinWindow.findWindowHwnd(null, "RingCentral for Skype for Business");
 
-  if (hwnd1 && hwnd2) {
-    const window1 = new dock.WinWindow(hwnd1);
-    const window2 = new dock.WinWindow(hwnd2);
-    window1.dockIn(window2);
-  }
-}, 1000);
+//   if (hwnd1 && hwnd2) {
+//     const window1 = new dock.WinWindow(hwnd1);
+//     const window2 = new dock.WinWindow(hwnd2);
+//     window1.dockIn(window2);
+//   }
+// }, 1000);

@@ -15,6 +15,33 @@ class WinWindow extends EventEmitter {
     return addon.findWindowHwnd(className || null, windowName || null);
   }
 
+  static getForegroundWindow() {
+    return addon.getForegroundWindow();
+  }
+
+  static setForegroundWindow(hwnd) {
+    return !!addon.setForegroundWindow(hwnd);
+  }
+
+  static getWindowRect(hwnd) {
+    const rect = addon.getWindowRect(hwnd);
+    const parts = rect.split('|');
+    return {
+      left: parseInt(parts[0]),
+      top: parseInt(parts[1]),
+      right: parseInt(parts[2]),
+      bottom: parseInt(parts[3]),
+    };
+  }
+
+  static isWindowVisible(hwnd) {
+    return !!addon.isWindowVisible(hwnd);
+  }
+
+  static showWindow(hwnd) {
+    return !!addon.showWindow(hwnd);
+  }
+
   get left() {
     return this._left;
   }

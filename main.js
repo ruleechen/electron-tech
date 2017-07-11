@@ -1,7 +1,7 @@
 const electron = require('electron');
 const ipc = require('electron').ipcMain;
 const edge = require('electron-edge');
-const addon = require('./cpp');
+const dock = require('./dock');
 
 // Module to control application life.
 const app = electron.app;
@@ -78,6 +78,16 @@ ipc.on('async-message', function (event, arg) {
 });
 
 ipc.on('sync-message', function (event, arg) {
-  event.returnValue = JSON.stringify(addon.getWindowRect('Skype.exe'));
   mainWindow.setPosition(100, 100);
 });
+
+setTimeout(function () {
+  const hwnd1 = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
+  const hwnd2 = dock.WinWindow.findWindowHwnd(null, "RingCentral for Skype for Business");
+
+  if (hwnd1 && hwnd2) {
+    const window1 = new dock.WinWindow(hwnd1);
+    const window2 = new dock.WinWindow(hwnd2);
+    window1.dockIn(window2);
+  }
+}, 1000);

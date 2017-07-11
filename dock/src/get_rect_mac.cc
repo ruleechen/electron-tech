@@ -4,7 +4,7 @@
 
 #include <nan.h>
 
-namespace rcsfb_mac {
+namespace dock_mac {
 
   void get_window_rect(std::string threadName, int *left, int *top, int *right, int *bottom) {
     *left = 11;

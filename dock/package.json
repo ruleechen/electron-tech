@@ -1,10 +1,9 @@
 {
-  "name": "rcsfb",
+  "name": "dock",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js",
     "install": "node-gyp rebuild --target=1.6.11 --arch=x64 --dist-url=https://atom.io/download/electron"
   },
   "author": "",

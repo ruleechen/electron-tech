@@ -64,6 +64,7 @@
         "xstring": "dock",
         "xtr1common": "dock",
         "xtree": "dock",
-        "xutility": "dock"
+        "xutility": "dock",
+        "__config": "cpp"
     }
 }

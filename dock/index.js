@@ -2,8 +2,8 @@
 * index
 */
 
-const WinWindow = require('./window_win');
-const MacWindow = require('./window_mac');
+const WinWindow = require('./src/window_win');
+const MacWindow = require('./src/window_mac');
 
 module.exports = {
   WinWindow,

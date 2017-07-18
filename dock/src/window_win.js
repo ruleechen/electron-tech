@@ -2,11 +2,11 @@
 * windows window
 */
 
-const EventEmitter = require('events');
+const Window = require('./window');
 const addon = require('bindings')('dock.node');
 
 // class
-class WinWindow extends EventEmitter {
+class WinWindow extends Window {
   constructor(hwnd) {
     this._hwnd = hwnd;
   }

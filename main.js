@@ -78,12 +78,12 @@ ipc.on('async-message', function (event, arg) {
 });
 
 ipc.on('sync-message', function (event, arg) {
-  // var hwnd = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
-  // var rect = dock.WinWindow.getWindowRect(hwnd);
-  // dock.WinWindow.setForegroundWindow(hwnd);
-  // var json = JSON.stringify(rect);
-  // event.returnValue = json;
-  event.returnValue = dock.MacWindow.helloMac();
+  var hwnd = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
+  var rect = dock.WinWindow.getWindowRect(hwnd);
+  dock.WinWindow.setForegroundWindow(hwnd);
+  var json = JSON.stringify(rect);
+  event.returnValue = json;
+  // event.returnValue = dock.MacWindow.helloMac();
   mainWindow.setPosition(100, 100);
 });
 

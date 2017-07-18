@@ -2,11 +2,11 @@
 * osx window
 */
 
-const EventEmitter = require('events');
+const Window = require('./window');
 const addon = require('bindings')('dock.node');
 
 // class
-class MacWindow extends EventEmitter {
+class MacWindow extends Window {
   static helloMac() {
     return addon.helloMac('test');
   }

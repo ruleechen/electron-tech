@@ -5,12 +5,8 @@
 const Window = require('./window');
 const addon = require('bindings')('dock.node');
 
-// class
-class WinWindow extends Window {
-  constructor(hwnd) {
-    this._hwnd = hwnd;
-  }
-
+// addon wrap
+class AddonWrap {
   static findWindowHwnd(className, windowName) {
     return addon.findWindowHwnd(className || null, windowName || null);
   }
@@ -40,6 +36,13 @@ class WinWindow extends Window {
 
   static showWindow(hwnd) {
     return !!addon.showWindow(hwnd);
+  }
+}
+
+// class
+class WinWindow extends Window {
+  constructor(hwnd) {
+    this._hwnd = hwnd;
   }
 
   get left() {

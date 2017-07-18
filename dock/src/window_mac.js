@@ -5,11 +5,15 @@
 const Window = require('./window');
 const addon = require('bindings')('dock.node');
 
-// class
-class MacWindow extends Window {
+// addon wrap
+class AddonWrap {
   static helloMac() {
     return addon.helloMac('test');
   }
+}
+
+// class
+class MacWindow extends Window {
 }
 
 // exports

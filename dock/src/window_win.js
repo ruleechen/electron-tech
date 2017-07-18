@@ -20,14 +20,7 @@ class AddonWrap {
   }
 
   static getWindowRect(hwnd) {
-    const rect = addon.getWindowRect(hwnd);
-    const parts = rect.split('|');
-    return {
-      left: parseInt(parts[0]),
-      top: parseInt(parts[1]),
-      right: parseInt(parts[2]),
-      bottom: parseInt(parts[3]),
-    };
+    return addon.getWindowRect(hwnd);
   }
 
   static isWindowVisible(hwnd) {
@@ -37,12 +30,20 @@ class AddonWrap {
   static showWindow(hwnd) {
     return !!addon.showWindow(hwnd);
   }
+
+  static testCallback(callback) {
+    addon.testCallback(callback);
+  }
 }
 
 // class
 class WinWindow extends Window {
   constructor(hwnd) {
     this._hwnd = hwnd;
+  }
+
+  static get AddonWrap() {
+    return AddonWrap;
   }
 
   get left() {

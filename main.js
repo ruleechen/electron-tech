@@ -67,20 +67,23 @@ app.on('activate', function () {
 // code. You can also put them in separate files and require them here.
 
 ipc.on('async-message', function (event, arg) {
-  var method = edge.func({
-    assemblyFile: 'D:/rc/git/favorite/electron-quick-start/csharp/Win32Hook/Win32Hook/bin/Debug/Win32Hook.dll',
-    typeName: 'Win32Hook.Startup',
-    methodName: 'Invoke'
-  });
-  method('pong', function (error, result) {
-    event.sender.send('reply', result);
+  // var method = edge.func({
+  //   assemblyFile: 'D:/rc/git/favorite/electron-quick-start/csharp/Win32Hook/Win32Hook/bin/Debug/Win32Hook.dll',
+  //   typeName: 'Win32Hook.Startup',
+  //   methodName: 'Invoke'
+  // });
+  // method('pong', function (error, result) {
+  //   event.sender.send('reply', result);
+  // });
+  dock.WinWindow.AddonWrap.testCallback(function (a, b) {
+    event.sender.send('reply', a + ' ' + b);
   });
 });
 
 ipc.on('sync-message', function (event, arg) {
-  var hwnd = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
-  var rect = dock.WinWindow.getWindowRect(hwnd);
-  dock.WinWindow.setForegroundWindow(hwnd);
+  var hwnd = dock.WinWindow.AddonWrap.findWindowHwnd("CommunicatorMainWindowClass");
+  var rect = dock.WinWindow.AddonWrap.getWindowRect(hwnd);
+  dock.WinWindow.AddonWrap.setForegroundWindow(hwnd);
   var json = JSON.stringify(rect);
   event.returnValue = json;
   // event.returnValue = dock.MacWindow.helloMac();

@@ -58,10 +58,10 @@ namespace window_win {
   }
 
   void _getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+    v8::Isolate* isolate = info.GetIsolate();
     // parameter 0
     v8::String::Utf8Value cmd(info[0]);
     std::string strHwnd = std::string(*cmd);
-    // _tprintf( TEXT("\n  str input     = %s"), strHwnd.c_str() );
     // get rect
     int left = 0;
     int top = 0;
@@ -69,7 +69,6 @@ namespace window_win {
     int bottom = 0;
     RECT rect = { NULL };
     HWND hwnd = hwndCache[strHwnd];
-    // _tprintf( TEXT("\n  hwnd converd     = %p"), hwnd );
     if (GetWindowRect(hwnd, &rect)) {
       left = rect.left;
       top = rect.top;
@@ -77,8 +76,12 @@ namespace window_win {
       bottom = rect.bottom;
     }
     // return rect
-    std::string ret = std::to_string(left) + "|" + std::to_string(top) + "|" + std::to_string(right) + "|" + std::to_string(bottom);
-    info.GetReturnValue().Set(Nan::New(ret).ToLocalChecked());
+    v8::Local<v8::Object> obj = v8::Object::New(isolate);
+    obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(left));
+    obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(top));
+    obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(right));
+    obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(bottom));
+    info.GetReturnValue().Set(obj);
   }
 
   void _isWindowVisible(const Nan::FunctionCallbackInfo<v8::Value>& info) {
@@ -109,6 +112,17 @@ namespace window_win {
   // void _unhookWinEvent(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   // }
 
+  void _testCallback(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(info[0]);
+    Nan::Callback callback(function);
+    const unsigned argc = 2;
+    v8::Local<v8::Value> argv[argc] = {
+      Nan::New("hello").ToLocalChecked(),
+      Nan::New("world").ToLocalChecked()
+    };
+    callback.Call(argc, argv);
+  }
+
   void Init(v8::Local<v8::Object> exports) {
     exports -> Set(Nan::New("findWindowHwnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_findWindowHwnd) -> GetFunction());
     exports -> Set(Nan::New("getForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_getForegroundWindow) -> GetFunction());
@@ -116,6 +130,8 @@ namespace window_win {
     exports -> Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_getWindowRect) -> GetFunction());
     exports -> Set(Nan::New("isWindowVisible").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_isWindowVisible) -> GetFunction());
     exports -> Set(Nan::New("showWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_showWindow) -> GetFunction());
+
+    exports -> Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_testCallback) -> GetFunction());
   }
 
   NODE_MODULE(dock_win, Init);

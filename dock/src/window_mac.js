@@ -14,6 +14,9 @@ class AddonWrap {
 
 // class
 class MacWindow extends Window {
+  static get AddonWrap() {
+    return AddonWrap;
+  }
 }
 
 // exports

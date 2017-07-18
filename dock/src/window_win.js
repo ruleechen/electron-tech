@@ -31,8 +31,8 @@ class AddonWrap {
     return !!addon.showWindow(hwnd);
   }
 
-  static testCallback(callback) {
-    addon.testCallback(callback);
+  static testCallback(name, callback) {
+    addon.testCallback(name, callback);
   }
 }
 

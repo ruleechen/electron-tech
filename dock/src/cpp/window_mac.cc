@@ -25,18 +25,18 @@ namespace window_mac {
     CFRelease(windowList);
   }
 
-  void _helloMac(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-    // first parameter
-    v8::String::Utf8Value cmd(info[0]);
-    std::string name = std::string(*cmd);
+  void _helloMac(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    std::string name = std::string(*arg0);
     // return back rect
     std::string ret = "Hello " + name;
     LogLine(ret);
-    info.GetReturnValue().Set(Nan::New(ret).ToLocalChecked());
+    args.GetReturnValue().Set(Nan::New(ret).ToLocalChecked());
   }
 
   void Init(v8::Local<v8::Object> exports) {
-    exports -> Set(Nan::New("helloMac").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_helloMac) -> GetFunction());
+    exports->Set(Nan::New("helloMac").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_helloMac)->GetFunction());
   }
 
   NODE_MODULE(dock_mac, Init);

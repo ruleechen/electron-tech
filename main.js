@@ -75,8 +75,8 @@ ipc.on('async-message', function (event, arg) {
   // method('pong', function (error, result) {
   //   event.sender.send('reply', result);
   // });
-  dock.WinWindow.AddonWrap.testCallback(function (a, b) {
-    event.sender.send('reply', a + ' ' + b);
+  dock.WinWindow.AddonWrap.testCallback('rulee', function (a, b, c) {
+    event.sender.send('reply', a + ' ' + b + ' ' + c);
   });
 });
 

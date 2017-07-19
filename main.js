@@ -76,7 +76,7 @@ ipc.on('async-message', function (event, arg) {
   //   event.sender.send('reply', result);
   // });
   dock.WinWindow.AddonWrap.testCallback('rulee', function (a, b, c) {
-    event.sender.send('reply', a + ' ' + b + ' ' + c);
+    event.sender.send('async-message-reply', a + ' ' + b + ' ' + c);
   });
 });
 
@@ -88,6 +88,17 @@ ipc.on('sync-message', function (event, arg) {
   event.returnValue = json;
   // event.returnValue = dock.MacWindow.helloMac();
   mainWindow.setPosition(100, 100);
+});
+
+ipc.on('set-hook', function (event, enabled) {
+  if (enabled) {
+    dock.WinWindow.AddonWrap.setWinEventHookLocationChange(function () {
+      console.log(1);
+    });
+  } else {
+    dock.WinWindow.AddonWrap.unhookWinEvents();
+  }
+  event.returnValue = enabled;
 });
 
 // setTimeout(function () {

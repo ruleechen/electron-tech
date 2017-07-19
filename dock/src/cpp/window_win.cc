@@ -142,6 +142,7 @@ namespace window_win {
       auto const &value = ent.second;
       UnhookWinEvent(value);
     }
+    hookMap.clear();
   }
 
   void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {

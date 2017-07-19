@@ -4,22 +4,32 @@
 
 const ipc = require('electron').ipcRenderer;
 
-const btnTest = document.getElementById('test');
-const btnInteractiveDotNet = document.getElementById('interactiveDotNet');
+const btnSync = document.getElementById('btnSync');
+const btnAsync = document.getElementById('btnAsync');
+const btnHook = document.getElementById('btnHook');
+const btnUnhook = document.getElementById('btnUnhook');
 
 const showResult = function (html) {
     document.getElementById('result').innerHTML = html;
 };
 
-btnTest.addEventListener('click', function (event) {
+btnAsync.addEventListener('click', function (ev) {
     ipc.send('async-message', 'ping');
 });
-
-ipc.on('reply', function (event, arg) {
+ipc.on('async-message-reply', function (ev, arg) {
     showResult(`async-response: ${JSON.stringify(arg)}`);
 });
 
-btnInteractiveDotNet.addEventListener('click', function (event) {
+btnSync.addEventListener('click', function (ev) {
     const reply = ipc.sendSync('sync-message', 'ping');
     showResult(`sync-response: ${JSON.stringify(reply)}`);
+});
+
+btnHook.addEventListener('click', function(ev) {
+  const reply = ipc.sendSync('set-hook', true);
+  showResult(`set-hook: ${JSON.stringify(reply)}`);
+});
+btnUnhook.addEventListener('click', function(ev) {
+  const reply = ipc.sendSync('set-hook', false);
+  showResult(`set-hook: ${JSON.stringify(reply)}`);
 });

@@ -18,7 +18,7 @@ namespace window_win {
 
   std::map<std::string, HWND> hwndMap;
   std::map<DWORD, HWINEVENTHOOK> hookMap;
-  std::map<DWORD, v8::Local<v8::Function>> callbackMap;
+  std::map<DWORD, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>> callbackMap;
 
   std::string converHwndToString(HWND hwnd) {
     std::stringstream ss;
@@ -119,8 +119,10 @@ namespace window_win {
     if (hwndMap.count(strHwnd) == 0) {
       return;
     }
-    v8::Local<v8::Function> function = callbackMap[eventType];
-    Nan::Callback callback(function);
+    auto isolate = v8::Isolate::GetCurrent();
+    auto function = callbackMap[eventType];
+    auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
+    Nan::Callback callback(funcLocal);
     const unsigned argc = 2;
     v8::Local<v8::Value> argv[argc] = {
       Nan::New(hWinEventHook),
@@ -129,10 +131,11 @@ namespace window_win {
     callback.Call(argc, argv);
   }
 
-  void WrapSetWinEventHook(DWORD eventType) {
+  void WrapSetWinEventHook(DWORD eventType, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
     if (hookMap.count(eventType) > 0) {
       return;
     }
+    callbackMap[eventType] = callback;
     HWINEVENTHOOK hook = SetWinEventHook(eventType, eventType, NULL, WrapWinEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
     hookMap[eventType] = hook;
   }
@@ -143,6 +146,14 @@ namespace window_win {
       UnhookWinEvent(value);
     }
     hookMap.clear();
+    callbackMap.clear();
+  }
+
+  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> GetCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    auto isolate = args.GetIsolate();
+    auto arg0 = v8::Handle<v8::Function>::Cast(args[0]);
+    v8::Persistent<v8::Function> callback(isolate, arg0);
+    return callback;
   }
 
   void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -151,45 +162,39 @@ namespace window_win {
   }
 
   void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    auto callback = GetCallback(args);
     DWORD eventType = EVENT_OBJECT_HIDE;
-    callbackMap[eventType] = function;
-    WrapSetWinEventHook(eventType);
+    WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookObjectShow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    auto callback = GetCallback(args);
     DWORD eventType = EVENT_OBJECT_SHOW;
-    callbackMap[eventType] = function;
-    WrapSetWinEventHook(eventType);
+    WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookLocationChange(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    auto callback = GetCallback(args);
     DWORD eventType = EVENT_OBJECT_LOCATIONCHANGE;
-    callbackMap[eventType] = function;
-    WrapSetWinEventHook(eventType);
+    WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookMinimizeStart(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    auto callback = GetCallback(args);
     DWORD eventType = EVENT_SYSTEM_MINIMIZESTART;
-    callbackMap[eventType] = function;
-    WrapSetWinEventHook(eventType);
+    WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookMinimizeEnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    auto callback = GetCallback(args);
     DWORD eventType = EVENT_SYSTEM_MINIMIZEEND;
-    callbackMap[eventType] = function;
-    WrapSetWinEventHook(eventType);
+    WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    auto callback = GetCallback(args);
     DWORD eventType = EVENT_SYSTEM_FOREGROUND;
-    callbackMap[eventType] = function;
-    WrapSetWinEventHook(eventType);
+    WrapSetWinEventHook(eventType, callback);
   }
 
   void out_testCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {

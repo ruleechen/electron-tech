@@ -6,6 +6,9 @@
     "chrono": "cpp",
     "xhash": "cpp",
     "xtree": "cpp",
-    "xutility": "cpp"
+    "xutility": "cpp",
+    "system_error": "cpp",
+    "xfunctional": "cpp",
+    "xlocmon": "cpp"
   }
 }

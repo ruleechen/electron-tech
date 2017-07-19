@@ -31,8 +31,36 @@ class AddonWrap {
     return !!addon.showWindow(hwnd);
   }
 
+  static unhookWinEvents() {
+    return addon.unhookWinEvents();
+  }
+
+  static setWinEventHookObjectHide(callback) {
+    return addon.setWinEventHookObjectHide(callback);
+  }
+
+  static setWinEventHookObjectShow(callback) {
+    return addon.setWinEventHookObjectShow(callback);
+  }
+
+  static setWinEventHookLocationChange(callback) {
+    return addon.setWinEventHookLocationChange(callback);
+  }
+
+  static setWinEventHookMinimizeStart(callback) {
+    return addon.setWinEventHookMinimizeStart(callback);
+  }
+
+  static setWinEventHookMinimizeEnd(callback) {
+    return addon.setWinEventHookMinimizeEnd(callback);
+  }
+
+  static setWinEventHookForeground(callback) {
+    return addon.setWinEventHookForeground(callback);
+  }
+
   static testCallback(name, callback) {
-    addon.testCallback(name, callback);
+    return addon.testCallback(name, callback);
   }
 }
 

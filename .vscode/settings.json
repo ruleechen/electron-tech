@@ -1,6 +1,11 @@
 {
   "files.associations": {
     "ostream": "cpp",
-    "sstream": "cpp"
+    "sstream": "cpp",
+    "functional": "cpp",
+    "chrono": "cpp",
+    "xhash": "cpp",
+    "xtree": "cpp",
+    "xutility": "cpp"
   }
 }

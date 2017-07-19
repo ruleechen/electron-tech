@@ -7,7 +7,8 @@
 #include <string>
 #include <sstream>
 #include <map>
-// #include <windows.h>
+#include <windows.h>
+#include <winuser.h>
 
 namespace window_win {
 
@@ -15,7 +16,9 @@ namespace window_win {
     std::cout << text + "\n" << std::flush;
   }
 
-  std::map<std::string, HWND> hwndCache;
+  std::map<std::string, HWND> hwndMap;
+  std::map<DWORD, HWINEVENTHOOK> hookMap;
+  std::map<DWORD, v8::Local<v8::Function>> callbackMap;
 
   std::string converHwndToString(HWND hwnd) {
     std::stringstream ss;
@@ -24,7 +27,7 @@ namespace window_win {
     return str;
   }
 
-  void _findWindowHwnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_findWindowHwnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
     LPCTSTR className = (args[0]->IsNull() || args[0]->IsUndefined()) ? NULL : std::string(*arg0).c_str();
@@ -35,31 +38,31 @@ namespace window_win {
     HWND hwnd = FindWindow(className, windowName);
     // return
     std::string strHwnd = converHwndToString(hwnd);
-    hwndCache[strHwnd] = hwnd;
+    hwndMap[strHwnd] = hwnd;
     args.GetReturnValue().Set(Nan::New(strHwnd).ToLocalChecked());
   }
 
-  void _getForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_getForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // find
     HWND hwnd = GetForegroundWindow();
     // return
     std::string strHwnd = converHwndToString(hwnd);
-    hwndCache[strHwnd] = hwnd;
+    hwndMap[strHwnd] = hwnd;
     args.GetReturnValue().Set(Nan::New(strHwnd).ToLocalChecked());
   }
 
-  void _setForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_setForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
     std::string strHwnd = std::string(*arg0);
     // apply
-    HWND hwnd = hwndCache[strHwnd];
+    HWND hwnd = hwndMap[strHwnd];
     BOOL setted = SetForegroundWindow(hwnd);
     // return
     args.GetReturnValue().Set(Nan::New(setted));
   }
 
-  void _getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     v8::Isolate* isolate = args.GetIsolate();
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
@@ -70,7 +73,7 @@ namespace window_win {
     int right = 0;
     int bottom = 0;
     RECT rect = { NULL };
-    HWND hwnd = hwndCache[strHwnd];
+    HWND hwnd = hwndMap[strHwnd];
     if (GetWindowRect(hwnd, &rect)) {
       left = rect.left;
       top = rect.top;
@@ -86,35 +89,109 @@ namespace window_win {
     args.GetReturnValue().Set(obj);
   }
 
-  void _isWindowVisible(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_isWindowVisible(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
     std::string strHwnd = std::string(*arg0);
     // get
-    HWND hwnd = hwndCache[strHwnd];
+    HWND hwnd = hwndMap[strHwnd];
     BOOL visible = IsWindowVisible(hwnd);
     // return
     args.GetReturnValue().Set(Nan::New(visible));
   }
 
-  void _showWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_showWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
     std::string strHwnd = std::string(*arg0);
     // get
-    HWND hwnd = hwndCache[strHwnd];
+    HWND hwnd = hwndMap[strHwnd];
     BOOL showed = ShowWindow(hwnd, 1);
     // return
     args.GetReturnValue().Set(Nan::New(showed));
   }
 
-  // void _setWinEventHook(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-  // }
+  void CALLBACK WrapWinEventProc(HWINEVENTHOOK hWinEventHook, DWORD eventType, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+    if (callbackMap.count(eventType) == 0) {
+      return;
+    }
+    std::string strHwnd = converHwndToString(hwnd);
+    if (hwndMap.count(strHwnd) == 0) {
+      return;
+    }
+    v8::Local<v8::Function> function = callbackMap[eventType];
+    Nan::Callback callback(function);
+    const unsigned argc = 2;
+    v8::Local<v8::Value> argv[argc] = {
+      Nan::New(hWinEventHook),
+      Nan::New(hwnd)
+    };
+    callback.Call(argc, argv);
+  }
 
-  // void _unhookWinEvent(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-  // }
+  void WrapSetWinEventHook(DWORD eventType) {
+    if (hookMap.count(eventType) > 0) {
+      return;
+    }
+    HWINEVENTHOOK hook = SetWinEventHook(eventType, eventType, NULL, WrapWinEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    hookMap[eventType] = hook;
+  }
 
-  void _testCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void WrapUnhookWinEvent() {
+    for(auto const &ent : hookMap) {
+      auto const &value = ent.second;
+      UnhookWinEvent(value);
+    }
+  }
+
+  void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    WrapUnhookWinEvent();
+    args.GetReturnValue().Set(Nan::New(TRUE));
+  }
+
+  void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    DWORD eventType = EVENT_OBJECT_HIDE;
+    callbackMap[eventType] = function;
+    WrapSetWinEventHook(eventType);
+  }
+
+  void out_setWinEventHookObjectShow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    DWORD eventType = EVENT_OBJECT_SHOW;
+    callbackMap[eventType] = function;
+    WrapSetWinEventHook(eventType);
+  }
+
+  void out_setWinEventHookLocationChange(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    DWORD eventType = EVENT_OBJECT_LOCATIONCHANGE;
+    callbackMap[eventType] = function;
+    WrapSetWinEventHook(eventType);
+  }
+
+  void out_setWinEventHookMinimizeStart(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    DWORD eventType = EVENT_SYSTEM_MINIMIZESTART;
+    callbackMap[eventType] = function;
+    WrapSetWinEventHook(eventType);
+  }
+
+  void out_setWinEventHookMinimizeEnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    DWORD eventType = EVENT_SYSTEM_MINIMIZEEND;
+    callbackMap[eventType] = function;
+    WrapSetWinEventHook(eventType);
+  }
+
+  void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[0]);
+    DWORD eventType = EVENT_SYSTEM_FOREGROUND;
+    callbackMap[eventType] = function;
+    WrapSetWinEventHook(eventType);
+  }
+
+  void out_testCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     v8::Local<v8::String> name = v8::Local<v8::String>::Cast(args[0]);
     v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[1]);
     Nan::Callback callback(function);
@@ -128,14 +205,22 @@ namespace window_win {
   }
 
   void Init(v8::Local<v8::Object> exports) {
-    exports->Set(Nan::New("findWindowHwnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_findWindowHwnd)->GetFunction());
-    exports->Set(Nan::New("getForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_getForegroundWindow)->GetFunction());
-    exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_setForegroundWindow)->GetFunction());
-    exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_getWindowRect)->GetFunction());
-    exports->Set(Nan::New("isWindowVisible").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_isWindowVisible)->GetFunction());
-    exports->Set(Nan::New("showWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_showWindow)->GetFunction());
-
-    exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(_testCallback)->GetFunction());
+    exports->Set(Nan::New("findWindowHwnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowHwnd)->GetFunction());
+    exports->Set(Nan::New("getForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getForegroundWindow)->GetFunction());
+    exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
+    exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
+    exports->Set(Nan::New("isWindowVisible").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowVisible)->GetFunction());
+    exports->Set(Nan::New("showWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_showWindow)->GetFunction());
+    // event hooks
+    exports->Set(Nan::New("unhookWinEvents").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_unhookWinEvents)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookObjectHide").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectHide)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookObjectShow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectShow)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookLocationChange").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookLocationChange)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookMinimizeStart").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookMinimizeStart)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookMinimizeEnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookMinimizeEnd)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
+    // test
+    exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());
   }
 
   NODE_MODULE(dock_win, Init);

@@ -94,7 +94,7 @@ ipc.on('sync-message', function (event, arg) {
   if (isWin) {
     sfbHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
       className: 'CommunicatorMainWindowClass',
-      windowName: null,
+      windowName: 'Skype for Business ',
     });
     const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
     dock.WinWindow.AddonWrap.setForegroundWindow(sfbHwnd);

@@ -3,18 +3,14 @@
 */
 
 #include <nan.h>
-#include <iostream>
 #include <string>
+#include <iostream>
 #include <sstream>
 #include <map>
 #include <windows.h>
 #include <winuser.h>
 
 namespace window_win {
-
-  void LogLine(std::string text) {
-    std::cout << text + "\n" << std::flush;
-  }
 
   std::map<std::string, HWND> hwndMap;
   std::map<DWORD, HWINEVENTHOOK> hookMap;
@@ -30,23 +26,23 @@ namespace window_win {
   void out_findWindowHwnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
-    LPCTSTR className = (args[0]->IsNull() || args[0]->IsUndefined()) ? NULL : std::string(*arg0).c_str();
+    auto className = args[0]->IsString() ? std::string(*arg0) : "";
     // argument 1
     v8::String::Utf8Value arg1(args[1]);
-    LPCTSTR windowName = (args[1]->IsNull() || args[1]->IsUndefined()) ? NULL : std::string(*arg1).c_str();
+    auto windowName = args[1]->IsString() ? std::string(*arg1) : "";
     // find
-    HWND hwnd = FindWindow(className, windowName);
+    auto hwnd = FindWindow(className.c_str(), windowName.c_str());
     // return
-    std::string strHwnd = converHwndToString(hwnd);
+    auto strHwnd = converHwndToString(hwnd);
     hwndMap[strHwnd] = hwnd;
     args.GetReturnValue().Set(Nan::New(strHwnd).ToLocalChecked());
   }
 
   void out_getForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // find
-    HWND hwnd = GetForegroundWindow();
+    auto hwnd = GetForegroundWindow();
     // return
-    std::string strHwnd = converHwndToString(hwnd);
+    auto strHwnd = converHwndToString(hwnd);
     hwndMap[strHwnd] = hwnd;
     args.GetReturnValue().Set(Nan::New(strHwnd).ToLocalChecked());
   }
@@ -54,26 +50,25 @@ namespace window_win {
   void out_setForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
-    std::string strHwnd = std::string(*arg0);
+    auto strHwnd = std::string(*arg0);
     // apply
-    HWND hwnd = hwndMap[strHwnd];
-    BOOL setted = SetForegroundWindow(hwnd);
+    auto hwnd = hwndMap[strHwnd];
+    auto setted = SetForegroundWindow(hwnd);
     // return
     args.GetReturnValue().Set(Nan::New(setted));
   }
 
   void out_getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Isolate* isolate = args.GetIsolate();
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
-    std::string strHwnd = std::string(*arg0);
+    auto strHwnd = std::string(*arg0);
     // get rect
     int left = 0;
     int top = 0;
     int right = 0;
     int bottom = 0;
     RECT rect = { NULL };
-    HWND hwnd = hwndMap[strHwnd];
+    auto hwnd = hwndMap[strHwnd];
     if (GetWindowRect(hwnd, &rect)) {
       left = rect.left;
       top = rect.top;
@@ -81,7 +76,8 @@ namespace window_win {
       bottom = rect.bottom;
     }
     // return rect
-    v8::Local<v8::Object> obj = v8::Object::New(isolate);
+    auto isolate = args.GetIsolate();
+    auto obj = v8::Object::New(isolate);
     obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(left));
     obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(top));
     obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(right));
@@ -92,10 +88,10 @@ namespace window_win {
   void out_isWindowVisible(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
-    std::string strHwnd = std::string(*arg0);
+    auto strHwnd = std::string(*arg0);
     // get
-    HWND hwnd = hwndMap[strHwnd];
-    BOOL visible = IsWindowVisible(hwnd);
+    auto hwnd = hwndMap[strHwnd];
+    auto visible = IsWindowVisible(hwnd);
     // return
     args.GetReturnValue().Set(Nan::New(visible));
   }
@@ -103,10 +99,10 @@ namespace window_win {
   void out_showWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
-    std::string strHwnd = std::string(*arg0);
+    auto strHwnd = std::string(*arg0);
     // get
-    HWND hwnd = hwndMap[strHwnd];
-    BOOL showed = ShowWindow(hwnd, 1);
+    auto hwnd = hwndMap[strHwnd];
+    auto showed = ShowWindow(hwnd, 1);
     // return
     args.GetReturnValue().Set(Nan::New(showed));
   }
@@ -162,43 +158,43 @@ namespace window_win {
 
   void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    DWORD eventType = EVENT_OBJECT_HIDE;
+    auto eventType = EVENT_OBJECT_HIDE;
     WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookObjectShow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    DWORD eventType = EVENT_OBJECT_SHOW;
+    auto eventType = EVENT_OBJECT_SHOW;
     WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookLocationChange(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    DWORD eventType = EVENT_OBJECT_LOCATIONCHANGE;
+    auto eventType = EVENT_OBJECT_LOCATIONCHANGE;
     WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookMinimizeStart(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    DWORD eventType = EVENT_SYSTEM_MINIMIZESTART;
+    auto eventType = EVENT_SYSTEM_MINIMIZESTART;
     WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookMinimizeEnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    DWORD eventType = EVENT_SYSTEM_MINIMIZEEND;
+    auto eventType = EVENT_SYSTEM_MINIMIZEEND;
     WrapSetWinEventHook(eventType, callback);
   }
 
   void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    DWORD eventType = EVENT_SYSTEM_FOREGROUND;
+    auto eventType = EVENT_SYSTEM_FOREGROUND;
     WrapSetWinEventHook(eventType, callback);
   }
 
   void out_testCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    v8::Local<v8::String> name = v8::Local<v8::String>::Cast(args[0]);
-    v8::Local<v8::Function> function = v8::Local<v8::Function>::Cast(args[1]);
+    auto name = v8::Local<v8::String>::Cast(args[0]);
+    auto function = v8::Local<v8::Function>::Cast(args[1]);
     Nan::Callback callback(function);
     const unsigned argc = 3;
     v8::Local<v8::Value> argv[argc] = {

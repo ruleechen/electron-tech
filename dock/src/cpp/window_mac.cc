@@ -3,14 +3,11 @@
 */
 
 #include <nan.h>
+#include <string>
 #include <iostream>
 #include <ApplicationServices/ApplicationServices.h>
 
 namespace window_mac {
-
-  void LogLine(std::string text) {
-    std::cout << text + "\n" << std::flush;
-  }
 
   CFArrayRef createWindowDescription(CGWindowID id) {
     CGWindowID idCArray[1] = { id };
@@ -28,15 +25,15 @@ namespace window_mac {
   void out_helloMac(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
-    std::string name = std::string(*arg0);
+    auto name = std::string(*arg0);
     // return back rect
-    std::string ret = "Hello " + name;
-    LogLine(ret);
+    auto ret = "Hello " + name;
+    std::cout << "Message: " << ret << std::endl;
     args.GetReturnValue().Set(Nan::New(ret).ToLocalChecked());
   }
 
   void out_destroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    LogLine("destroy");
+    std::cout << "destroy" << std::endl;
   }
 
   void Init(v8::Local<v8::Object> exports) {

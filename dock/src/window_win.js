@@ -8,7 +8,7 @@ const addon = require('bindings')('dock.node');
 // addon wrap
 class AddonWrap {
   static findWindowHwnd({ className, windowName }) {
-    return addon.findWindowHwnd(className || null, windowName || null);
+    return addon.findWindowHwnd(className, windowName);
   }
 
   static getForegroundWindow() {

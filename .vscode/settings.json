@@ -9,6 +9,7 @@
     "xutility": "cpp",
     "system_error": "cpp",
     "xfunctional": "cpp",
-    "xlocmon": "cpp"
+    "xlocmon": "cpp",
+    "xmemory0": "cpp"
   }
 }

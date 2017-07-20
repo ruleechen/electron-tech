@@ -123,10 +123,9 @@ namespace window_win {
     auto function = callbackMap[eventType];
     auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
     Nan::Callback callback(funcLocal);
-    const unsigned argc = 2;
+    const unsigned argc = 1;
     v8::Local<v8::Value> argv[argc] = {
-      Nan::New(hWinEventHook),
-      Nan::New(hwnd)
+      Nan::New(strHwnd).ToLocalChecked()
     };
     callback.Call(argc, argv);
   }
@@ -210,6 +209,11 @@ namespace window_win {
     callback.Call(argc, argv);
   }
 
+  void out_destroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    WrapUnhookWinEvent();
+    hwndMap.clear();
+  }
+
   void Init(v8::Local<v8::Object> exports) {
     exports->Set(Nan::New("findWindowHwnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowHwnd)->GetFunction());
     exports->Set(Nan::New("getForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getForegroundWindow)->GetFunction());
@@ -227,6 +231,8 @@ namespace window_win {
     exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
     // test
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());
+    // destroy
+    exports->Set(Nan::New("destroy").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_destroy)->GetFunction());
   }
 
   NODE_MODULE(dock_win, Init);

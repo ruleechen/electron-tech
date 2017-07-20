@@ -7,7 +7,7 @@ const addon = require('bindings')('dock.node');
 
 // addon wrap
 class AddonWrap {
-  static findWindowHwnd(className, windowName) {
+  static findWindowHwnd({ className, windowName }) {
     return addon.findWindowHwnd(className || null, windowName || null);
   }
 
@@ -61,6 +61,10 @@ class AddonWrap {
 
   static testCallback(name, callback) {
     return addon.testCallback(name, callback);
+  }
+
+  static destroy() {
+    return addon.destroy();
   }
 }
 

@@ -37,7 +37,8 @@ function createWindow() {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    mainWindow = null
+    mainWindow = null;
+    dock.WinWindow.AddonWrap.destroy();
   });
 }
 
@@ -67,7 +68,7 @@ app.on('activate', function () {
 // code. You can also put them in separate files and require them here.
 
 ipc.on('async-message', function (event, arg) {
-  // var method = edge.func({
+  // const method = edge.func({
   //   assemblyFile: 'D:/rc/git/favorite/electron-quick-start/csharp/Win32Hook/Win32Hook/bin/Debug/Win32Hook.dll',
   //   typeName: 'Win32Hook.Startup',
   //   methodName: 'Invoke'
@@ -80,34 +81,32 @@ ipc.on('async-message', function (event, arg) {
   });
 });
 
+let rcHwnd;
+let sfbHwnd;
+
 ipc.on('sync-message', function (event, arg) {
-  var hwnd = dock.WinWindow.AddonWrap.findWindowHwnd("CommunicatorMainWindowClass");
-  var rect = dock.WinWindow.AddonWrap.getWindowRect(hwnd);
-  dock.WinWindow.AddonWrap.setForegroundWindow(hwnd);
-  var json = JSON.stringify(rect);
+  sfbHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
+    className: 'CommunicatorMainWindowClass',
+    windowName: null,
+  });
+  const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
+  dock.WinWindow.AddonWrap.setForegroundWindow(sfbHwnd);
+  const json = JSON.stringify(rect);
   event.returnValue = json;
   // event.returnValue = dock.MacWindow.helloMac();
-  mainWindow.setPosition(100, 100);
+  mainWindow.setPosition(rect.right, rect.top);
 });
 
 ipc.on('set-hook', function (event, enabled) {
   if (enabled) {
-    dock.WinWindow.AddonWrap.setWinEventHookLocationChange(function () {
-      console.log(1);
+    dock.WinWindow.AddonWrap.setWinEventHookLocationChange(function (hwnd) {
+      if (hwnd === sfbHwnd) {
+        const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
+        mainWindow.setPosition(rect.right, rect.top);
+      }
     });
   } else {
     dock.WinWindow.AddonWrap.unhookWinEvents();
   }
   event.returnValue = enabled;
 });
-
-// setTimeout(function () {
-//   const hwnd1 = dock.WinWindow.findWindowHwnd("CommunicatorMainWindowClass");
-//   const hwnd2 = dock.WinWindow.findWindowHwnd(null, "RingCentral for Skype for Business");
-
-//   if (hwnd1 && hwnd2) {
-//     const window1 = new dock.WinWindow(hwnd1);
-//     const window2 = new dock.WinWindow(hwnd2);
-//     window1.dockIn(window2);
-//   }
-// }, 1000);

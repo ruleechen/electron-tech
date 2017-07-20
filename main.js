@@ -96,8 +96,15 @@ ipc.on('sync-message', function (event, arg) {
       className: 'CommunicatorMainWindowClass',
       windowName: 'Skype for Business ',
     });
+    rcHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
+      className: 'Chrome_WidgetWin_1',
+      windowName: 'Hello World!',
+    });
     const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
-    dock.WinWindow.AddonWrap.setForegroundWindow(sfbHwnd);
+    if (!dock.WinWindow.AddonWrap.isWindowVisible(sfbHwnd)) {
+      dock.WinWindow.AddonWrap.showWindow(sfbHwnd);
+    }
+    dock.WinWindow.AddonWrap.bringWindowToFront(sfbHwnd);
     const json = JSON.stringify(rect);
     event.returnValue = json;
     mainWindow.setPosition(rect.right, rect.top);
@@ -112,6 +119,15 @@ ipc.on('set-hook', function (event, enabled) {
       if (hwnd === sfbHwnd) {
         const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
         mainWindow.setPosition(rect.right, rect.top);
+      }
+    });
+    dock.WinWindow.AddonWrap.setWinEventHookForeground(function (hwnd) {
+      console.log(hwnd);
+      if (hwnd === sfbHwnd && rcHwnd) {
+        dock.WinWindow.AddonWrap.bringWindowToFront(rcHwnd);
+      }
+      if (hwnd === rcHwnd && sfbHwnd) {
+        dock.WinWindow.AddonWrap.bringWindowToFront(sfbHwnd);
       }
     });
   } else {

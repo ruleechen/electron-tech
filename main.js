@@ -1,7 +1,5 @@
 const electron = require('electron');
 const ipc = require('electron').ipcMain;
-// const edge = require('electron-edge');
-const dock = require('./dock');
 
 // Module to control application life.
 const app = electron.app;
@@ -10,6 +8,10 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
+
+// const edge = require('electron-edge');
+const dock = require('./dock');
+const isWin = /^win/.test(process.platform);
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -38,7 +40,11 @@ function createWindow() {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null;
-    dock.WinWindow.AddonWrap.destroy();
+    if (isWin) {
+      dock.WinWindow.AddonWrap.destroy();
+    } else {
+      dock.MacWindow.AddonWrap.destroy();
+    }
   });
 }
 
@@ -85,16 +91,19 @@ let rcHwnd;
 let sfbHwnd;
 
 ipc.on('sync-message', function (event, arg) {
-  sfbHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
-    className: 'CommunicatorMainWindowClass',
-    windowName: null,
-  });
-  const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
-  dock.WinWindow.AddonWrap.setForegroundWindow(sfbHwnd);
-  const json = JSON.stringify(rect);
-  event.returnValue = json;
-  // event.returnValue = dock.MacWindow.helloMac();
-  mainWindow.setPosition(rect.right, rect.top);
+  if (isWin) {
+    sfbHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
+      className: 'CommunicatorMainWindowClass',
+      windowName: null,
+    });
+    const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
+    dock.WinWindow.AddonWrap.setForegroundWindow(sfbHwnd);
+    const json = JSON.stringify(rect);
+    event.returnValue = json;
+    mainWindow.setPosition(rect.right, rect.top);
+  } else {
+    event.returnValue = dock.MacWindow.AddonWrap.helloMac();
+  }
 });
 
 ipc.on('set-hook', function (event, enabled) {

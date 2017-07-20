@@ -10,6 +10,9 @@ class AddonWrap {
   static helloMac() {
     return addon.helloMac('test');
   }
+  static destroy() {
+    return addon.destroy();
+  }
 }
 
 // class

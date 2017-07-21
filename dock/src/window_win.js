@@ -11,8 +11,12 @@ class AddonWrap {
     return addon.findWindowHwnd(className, windowName);
   }
 
-  static bringWindowToFront(hwnd) {
-    return !!addon.bringWindowToFront(hwnd);
+  static bringWindowToTop(hwnd) {
+    return !!addon.bringWindowToTop(hwnd);
+  }
+
+  static setForegroundWindow(hwnd) {
+    return !!addon.setForegroundWindow(hwnd);
   }
 
   static getWindowRect(hwnd) {

@@ -12,6 +12,9 @@ const url = require('url');
 // const edge = require('electron-edge');
 const dock = require('./dock');
 const isWin = /^win/.test(process.platform);
+let rcHwnd;
+let sfbHwnd;
+let ignore = false;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -44,6 +47,20 @@ function createWindow() {
       dock.WinWindow.AddonWrap.destroy();
     } else {
       dock.MacWindow.AddonWrap.destroy();
+    }
+  });
+
+  mainWindow.on('focus', function () {
+    if (ignore) {
+      return;
+    }
+    if (sfbHwnd && isWin) {
+      ignore = true;
+      dock.WinWindow.AddonWrap.bringWindowToTop(sfbHwnd);
+      mainWindow.focus();
+      setTimeout(function () {
+        ignore = false;
+      }, 200);
     }
   });
 }
@@ -87,24 +104,23 @@ ipc.on('async-message', function (event, arg) {
   });
 });
 
-let rcHwnd;
-let sfbHwnd;
-
 ipc.on('sync-message', function (event, arg) {
   if (isWin) {
-    sfbHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
-      className: 'CommunicatorMainWindowClass',
-      windowName: 'Skype for Business ',
-    });
     rcHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
       className: 'Chrome_WidgetWin_1',
       windowName: 'Hello World!',
     });
+    sfbHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
+      className: 'CommunicatorMainWindowClass',
+      windowName: 'Skype for Business ',
+    });
+    console.log('rcHwnd: ' + rcHwnd);
+    console.log('sfbHwnd: ' + sfbHwnd);
     const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
     if (!dock.WinWindow.AddonWrap.isWindowVisible(sfbHwnd)) {
       dock.WinWindow.AddonWrap.showWindow(sfbHwnd);
     }
-    dock.WinWindow.AddonWrap.bringWindowToFront(sfbHwnd);
+    dock.WinWindow.AddonWrap.bringWindowToTop(sfbHwnd);
     const json = JSON.stringify(rect);
     event.returnValue = json;
     mainWindow.setPosition(rect.right, rect.top);
@@ -119,15 +135,21 @@ ipc.on('set-hook', function (event, enabled) {
       if (hwnd === sfbHwnd) {
         const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
         mainWindow.setPosition(rect.right, rect.top);
+        console.log(rect);
       }
     });
     dock.WinWindow.AddonWrap.setWinEventHookForeground(function (hwnd) {
-      console.log(hwnd);
-      if (hwnd === sfbHwnd && rcHwnd) {
-        dock.WinWindow.AddonWrap.bringWindowToFront(rcHwnd);
+      console.log('foreground: ' + hwnd);
+      if (ignore) {
+        return;
       }
-      if (hwnd === rcHwnd && sfbHwnd) {
-        dock.WinWindow.AddonWrap.bringWindowToFront(sfbHwnd);
+      if (hwnd === sfbHwnd && rcHwnd) {
+        ignore = true;
+        dock.WinWindow.AddonWrap.bringWindowToTop(rcHwnd);
+        dock.WinWindow.AddonWrap.bringWindowToTop(sfbHwnd);
+        setTimeout(function () {
+          ignore = false;
+        }, 200);
       }
     });
   } else {

@@ -10,6 +10,11 @@ class AddonWrap {
   static helloMac() {
     return addon.helloMac('test');
   }
+
+  static testCallback(name, callback) {
+    return addon.testCallback(name, callback);
+  }
+
   static destroy() {
     return addon.destroy();
   }

@@ -221,6 +221,7 @@ namespace window_win {
   void out_destroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     WrapUnhookWinEvent();
     hwndMap.clear();
+    std::cout << "destroy done" << std::endl;
   }
 
   void Init(v8::Local<v8::Object> exports) {

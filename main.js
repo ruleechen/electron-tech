@@ -99,7 +99,8 @@ ipc.on('async-message', function (event, arg) {
   // method('pong', function (error, result) {
   //   event.sender.send('reply', result);
   // });
-  dock.WinWindow.AddonWrap.testCallback('rulee', function (a, b, c) {
+  const wrap = isWin ? dock.WinWindow.AddonWrap : dock.MacWindow.AddonWrap;
+  wrap.testCallback('rulee', function (a, b, c) {
     event.sender.send('async-message-reply', a + ' ' + b + ' ' + c);
   });
 });

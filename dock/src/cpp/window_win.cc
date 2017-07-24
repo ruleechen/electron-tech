@@ -44,8 +44,11 @@ namespace window_win {
       windowNameIsString ? windowName.c_str() : NULL
     );
     // return
-    auto strHwnd = converHwndToString(hwnd);
-    hwndMap[strHwnd] = hwnd;
+    std::string strHwnd;
+    if (hwnd != NULL) {
+      strHwnd = converHwndToString(hwnd);
+      hwndMap[strHwnd] = hwnd;
+    }
     args.GetReturnValue().Set(Nan::New(strHwnd).ToLocalChecked());
   }
 
@@ -205,6 +208,16 @@ namespace window_win {
     WrapSetWinEventHook(eventType, callback);
   }
 
+  void out_helloWorld(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto name = std::string(*arg0);
+    // return back rect
+    auto ret = "Hello " + name;
+    std::cout << "Message: " << ret << std::endl;
+    args.GetReturnValue().Set(Nan::New(ret).ToLocalChecked());
+  }
+
   void out_testCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto name = v8::Local<v8::String>::Cast(args[0]);
     auto function = v8::Local<v8::Function>::Cast(args[1]);
@@ -216,6 +229,7 @@ namespace window_win {
       name,
     };
     callback.Call(argc, argv);
+    std::cout << "callback done" << std::endl;
   }
 
   void out_destroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -240,6 +254,7 @@ namespace window_win {
     exports->Set(Nan::New("setWinEventHookMinimizeEnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookMinimizeEnd)->GetFunction());
     exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
     // test
+    exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());
     // destroy
     exports->Set(Nan::New("destroy").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_destroy)->GetFunction());

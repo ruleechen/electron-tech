@@ -7,8 +7,8 @@ const addon = require('bindings')('dock.node');
 
 // addon wrap
 class AddonWrap {
-  static helloMac() {
-    return addon.helloMac('test');
+  static helloWorld() {
+    return addon.helloWorld('test');
   }
 
   static testCallback(name, callback) {

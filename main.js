@@ -12,19 +12,25 @@ const url = require('url');
 // const edge = require('electron-edge');
 const dock = require('./dock');
 const isWin = /^win/.test(process.platform);
-let rcHwnd;
-let sfbHwnd;
-let ignore = false;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let dockWindow;
 
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600
+    width: 300,
+    height: 600,
+    show: false,
+    frame: false,
+    movable: false,
+    closable: false,
+    resizable: false,
+    minimizable: true,
+    maximizable: false,
+    fullscreenable: false,
   });
 
   // and load the index.html of the app.
@@ -37,30 +43,26 @@ function createWindow() {
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
 
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    if (isWin) {
+      dockWindow = new dock.WinWindow({
+        browserWindow: mainWindow,
+      });
+      dockWindow.tie();
+    }
+  });
+
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null;
-    if (isWin) {
-      dock.WinWindow.AddonWrap.destroy();
-    } else {
-      dock.MacWindow.AddonWrap.destroy();
-    }
-  });
 
-  mainWindow.on('focus', function () {
-    if (ignore) {
-      return;
-    }
-    if (sfbHwnd && isWin) {
-      ignore = true;
-      dock.WinWindow.AddonWrap.bringWindowToTop(sfbHwnd);
-      mainWindow.focus();
-      setTimeout(function () {
-        ignore = false;
-      }, 200);
+    // destroy
+    if (dockWindow) {
+      dockWindow.destroy();
     }
   });
 }
@@ -87,9 +89,6 @@ app.on('activate', function () {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
-
 ipc.on('async-message', function (event, arg) {
   // const method = edge.func({
   //   assemblyFile: 'D:/rc/git/favorite/electron-quick-start/csharp/Win32Hook/Win32Hook/bin/Debug/Win32Hook.dll',
@@ -106,55 +105,33 @@ ipc.on('async-message', function (event, arg) {
 });
 
 ipc.on('sync-message', function (event, arg) {
+  const wrap = isWin ? dock.WinWindow.AddonWrap : dock.MacWindow.AddonWrap;
+  event.returnValue = wrap.helloWorld();
+
   if (isWin) {
-    rcHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
+    var rcHwnd = wrap.findWindowHwnd({
       className: 'Chrome_WidgetWin_1',
       windowName: 'Hello World!',
     });
-    sfbHwnd = dock.WinWindow.AddonWrap.findWindowHwnd({
+    var sfbHwnd = wrap.findWindowHwnd({
       className: 'CommunicatorMainWindowClass',
       windowName: 'Skype for Business ',
     });
+    var dd0 = wrap.findWindowHwnd({
+      className: 'LyncTabFrameHostWindowClass',
+      windowName: null,
+    });
+    var dd1 = wrap.findWindowHwnd({
+      className: 'LyncConversationWindowClass',
+      windowName: null,
+    });
+    var dd2 = wrap.findWindowHwnd({
+      className: 'NetUIListViewItem',
+      windowName: null,
+    });
+    console.log('found: ' + dd2);
     console.log('rcHwnd: ' + rcHwnd);
     console.log('sfbHwnd: ' + sfbHwnd);
-    const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
-    if (!dock.WinWindow.AddonWrap.isWindowVisible(sfbHwnd)) {
-      dock.WinWindow.AddonWrap.showWindow(sfbHwnd);
-    }
-    dock.WinWindow.AddonWrap.bringWindowToTop(sfbHwnd);
-    const json = JSON.stringify(rect);
-    event.returnValue = json;
-    mainWindow.setPosition(rect.right, rect.top);
-  } else {
-    event.returnValue = dock.MacWindow.AddonWrap.helloMac();
   }
 });
 
-ipc.on('set-hook', function (event, enabled) {
-  if (enabled) {
-    dock.WinWindow.AddonWrap.setWinEventHookLocationChange(function (hwnd) {
-      if (hwnd === sfbHwnd) {
-        const rect = dock.WinWindow.AddonWrap.getWindowRect(sfbHwnd);
-        mainWindow.setPosition(rect.right, rect.top);
-        console.log(rect);
-      }
-    });
-    dock.WinWindow.AddonWrap.setWinEventHookForeground(function (hwnd) {
-      console.log('foreground: ' + hwnd);
-      if (ignore) {
-        return;
-      }
-      if (hwnd === sfbHwnd && rcHwnd) {
-        ignore = true;
-        dock.WinWindow.AddonWrap.bringWindowToTop(rcHwnd);
-        dock.WinWindow.AddonWrap.bringWindowToTop(sfbHwnd);
-        setTimeout(function () {
-          ignore = false;
-        }, 200);
-      }
-    });
-  } else {
-    dock.WinWindow.AddonWrap.unhookWinEvents();
-  }
-  event.returnValue = enabled;
-});

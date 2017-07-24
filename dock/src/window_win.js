@@ -4,9 +4,13 @@
 
 const Window = require('./window');
 const addon = require('bindings')('dock.node');
+const freezeForeground = require('./freeze').create({ timeout: 200 });
 
-// addon wrap
 class AddonWrap {
+  static helloWorld() {
+    return addon.helloWorld('test');
+  }
+
   static findWindowHwnd({ className, windowName }) {
     return addon.findWindowHwnd(className, windowName);
   }
@@ -68,73 +72,175 @@ class AddonWrap {
   }
 }
 
+class SfbWindow extends Window {
+  constructor() {
+    super();
+    this.sfbHwnd = SfbWindow.loadHwnd();
+    if (!this.sfbHwnd) {
+      throw new Error('"sfbHwnd" notfound');
+    }
+  }
+
+  static loadHwnd() {
+    return AddonWrap.findWindowHwnd({
+      className: 'CommunicatorMainWindowClass',
+      windowName: 'Skype for Business ',
+    });
+  }
+
+  isVisible() {
+    return AddonWrap.isWindowVisible(this.sfbHwnd);
+  }
+
+  showWindow() {
+    if (!this.isVisible()) {
+      AddonWrap.showWindow(this.sfbHwnd);
+    }
+    this.bringToTop();
+  }
+
+  bringToTop() {
+    AddonWrap.bringWindowToTop(this.sfbHwnd);
+  }
+
+  setPosition(x, y) {
+    // AddonWrap.setPosition ?
+  }
+
+  getRect() {
+    return AddonWrap.getWindowRect(this.sfbHwnd);
+  }
+
+  hook() {
+    AddonWrap.setWinEventHookLocationChange((hwnd) => {
+      if (hwnd === this.sfbHwnd) {
+        const rect = this.getRect();
+        this.emit('move', rect);
+      }
+    });
+    AddonWrap.setWinEventHookForeground((hwnd) => {
+      if (hwnd === this.sfbHwnd) {
+        if (!freezeForeground()) {
+          this.emit('foreground');
+        }
+      }
+    });
+  }
+
+  unhook() {
+    AddonWrap.unhookWinEvents();
+  }
+}
+
+class RcWindow extends Window {
+  constructor({ browserWindow }) {
+    super();
+    this.browserWindow = browserWindow;
+    this.rcHwnd = RcWindow.loadHwnd();
+    if (!this.rcHwnd) {
+      throw new Error('"rcHwnd" notfound');
+    }
+  }
+
+  static loadHwnd() {
+    return AddonWrap.findWindowHwnd({
+      className: 'Chrome_WidgetWin_1',
+      windowName: 'RingCentral for Skype for Business',
+    });
+  }
+
+  isVisible() {
+    return this.browserWindow.isVisible();
+  }
+
+  showWindow() {
+    if (!this.isVisible()) {
+      AddonWrap.showWindow(this.rcHwnd);
+    }
+    this.bringToTop();
+  }
+
+  bringToTop() {
+    AddonWrap.bringWindowToTop(this.rcHwnd);
+  }
+
+  setPosition(x, y) {
+    this.browserWindow.setPosition(x, y);
+  }
+
+  getRect() {
+    const size = this.browserWindow.getSize();
+    const position = this.browserWindow.getPosition();
+    return {
+      left: position[0],
+      top: position[1],
+      right: position[0] + size[0],
+      bottom: position[1] + size[1],
+    };
+  }
+
+  hook() {
+    this.browserWindow.on('move', this._move = () => {
+      const rect = this.getRect();
+      this.emit('move', rect);
+    });
+    this.browserWindow.on('focus', this._focus = () => {
+      if (!freezeForeground()) {
+        this.emit('foreground');
+      }
+    });
+  }
+
+  unhook() {
+    if (this._move) {
+      this.browserWindow.removeListener('move', this._move);
+      delete this._move;
+    }
+    if (this._focus) {
+      this.browserWindow.removeListener('focus', this._focus);
+      delete this._focus;
+    }
+  }
+}
+
 // class
 class WinWindow extends Window {
-  constructor(hwnd) {
-    this._hwnd = hwnd;
+  constructor({ browserWindow }) {
+    super();
+    // new
+    this.rcWindow = new RcWindow({ browserWindow });
+    this.sfbWindow = new SfbWindow();
+    // foreground
+    this.rcWindow.on('foreground', () => {
+      this.sfbWindow.bringToTop();
+    });
+    this.sfbWindow.on('foreground', () => {
+      this.rcWindow.bringToTop();
+    });
+    // move
+    this.sfbWindow.on('move', (rect) => {
+      // sync position
+      this.rcWindow.setPosition(rect.right, rect.top);
+    });
   }
 
   static get AddonWrap() {
     return AddonWrap;
   }
 
-  get left() {
-    return this._left;
+  tie() {
+    this.rcWindow.hook();
+    this.sfbWindow.hook();
+    // show window
+    this.sfbWindow.showWindow();
+    // sync position
+    const rect = this.sfbWindow.getRect();
+    this.rcWindow.setPosition(rect.right, rect.top);
   }
 
-  get top() {
-    return this._top;
-  }
-
-  get foreground() {
-    return false;
-  }
-
-  setPosition({ left, top }) {
-    this._left = left;
-    this._top = top;
-  }
-
-  dockIn(win) {
-    if (!(win instanceof WinWindow)) {
-      throw new Error("Invalid window object");
-    }
-    // regoister
-    this._dockWin = win;
-    this.on('move', this._selfMove = () => {
-      if (this.foreground) {
-        win.setPosition({
-          left: this.left - 100,
-          top: this.top - 100,
-        });
-      }
-    });
-    win.on('move', this._dockWinMove = () => {
-      if (this.foreground) {
-        this.setPosition({
-          left: win.left - 100,
-          top: win.top - 100,
-        });
-      }
-    });
-    // event
-    this.emit("dockin", win);
-    win.emit("dockin", this);
-  }
-
-  dockOut() {
-    if (!(this._dockWin instanceof WinWindow)) {
-      return;
-    }
-    // unreg
-    this.removeListener("move", this._selfMove);
-    this._dockWin.removeListener("move", this._dockWinMove);
-    this._selfMove = null;
-    this._dockWinMove = null;
-    this._dockWin = null;
-    // event
-    this.emit("dockout", win);
-    win.emit("dockout", this);
+  destroy() {
+    this.rcWindow.unhook();
+    this.sfbWindow.unhook();
   }
 }
 

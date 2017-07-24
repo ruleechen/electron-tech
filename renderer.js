@@ -6,8 +6,6 @@ const ipc = require('electron').ipcRenderer;
 
 const btnSync = document.getElementById('btnSync');
 const btnAsync = document.getElementById('btnAsync');
-const btnHook = document.getElementById('btnHook');
-const btnUnhook = document.getElementById('btnUnhook');
 
 const showResult = function (html) {
     document.getElementById('result').innerHTML = html;
@@ -23,13 +21,4 @@ ipc.on('async-message-reply', function (ev, arg) {
 btnSync.addEventListener('click', function (ev) {
     const reply = ipc.sendSync('sync-message', 'ping');
     showResult(`sync-response: ${JSON.stringify(reply)}`);
-});
-
-btnHook.addEventListener('click', function(ev) {
-  const reply = ipc.sendSync('set-hook', true);
-  showResult(`set-hook: ${JSON.stringify(reply)}`);
-});
-btnUnhook.addEventListener('click', function(ev) {
-  const reply = ipc.sendSync('set-hook', false);
-  showResult(`set-hook: ${JSON.stringify(reply)}`);
 });

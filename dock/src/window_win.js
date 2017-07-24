@@ -3,90 +3,8 @@
 */
 
 const Window = require('./window');
-const addon = require('bindings')('dock.node');
-const freezeForeground = require('./freeze').create({ timeout: 200 });
-
-class AddonWrap {
-  static helloWorld() {
-    return addon.helloWorld('test');
-  }
-
-  static findWindowHwnd({ className, windowName }) {
-    return addon.findWindowHwnd(className, windowName);
-  }
-
-  static bringWindowToTop(hwnd) {
-    return !!addon.bringWindowToTop(hwnd);
-  }
-
-  static setForegroundWindow(hwnd) {
-    return !!addon.setForegroundWindow(hwnd);
-  }
-
-  static getWindowRect(hwnd) {
-    return addon.getWindowRect(hwnd);
-  }
-
-  static isWindowVisible(hwnd) {
-    return !!addon.isWindowVisible(hwnd);
-  }
-
-  static showWindow(hwnd) {
-    return !!addon.showWindow(hwnd);
-  }
-
-  static hideWindow(hwnd) {
-    return !!addon.hideWindow(hwnd);
-  }
-
-  static isWindowMinimized(hwnd) {
-    return !!addon.isWindowMinimized(hwnd);
-  }
-
-  static minimizeWindow(hwnd) {
-    return !!addon.minimizeWindow(hwnd);
-  }
-
-  static restoreWindow(hwnd) {
-    return !!addon.restoreWindow(hwnd);
-  }
-
-  static unhookWinEvents() {
-    return addon.unhookWinEvents();
-  }
-
-  static setWinEventHookObjectHide(callback) {
-    return addon.setWinEventHookObjectHide(callback);
-  }
-
-  static setWinEventHookObjectShow(callback) {
-    return addon.setWinEventHookObjectShow(callback);
-  }
-
-  static setWinEventHookLocationChange(callback) {
-    return addon.setWinEventHookLocationChange(callback);
-  }
-
-  static setWinEventHookMinimizeStart(callback) {
-    return addon.setWinEventHookMinimizeStart(callback);
-  }
-
-  static setWinEventHookMinimizeEnd(callback) {
-    return addon.setWinEventHookMinimizeEnd(callback);
-  }
-
-  static setWinEventHookForeground(callback) {
-    return addon.setWinEventHookForeground(callback);
-  }
-
-  static testCallback(name, callback) {
-    return addon.testCallback(name, callback);
-  }
-
-  static destroy() {
-    return addon.destroy();
-  }
-}
+const Addon = require('./helpers/addon_win');
+const freezeForeground = require('./helpers/freeze').create({ timeout: 200 });
 
 class SfbWindow extends Window {
   constructor() {
@@ -98,66 +16,66 @@ class SfbWindow extends Window {
   }
 
   static loadHwnd() {
-    return AddonWrap.findWindowHwnd({
+    return Addon.findWindowHwnd({
       className: 'CommunicatorMainWindowClass',
       windowName: 'Skype for Business ',
     });
   }
 
   show() {
-    AddonWrap.showWindow(this.sfbHwnd);
+    Addon.showWindow(this.sfbHwnd);
   }
 
   hide() {
-    AddonWrap.hideWindow(this.sfbHwnd);
+    Addon.hideWindow(this.sfbHwnd);
   }
 
   isVisible() {
-    return AddonWrap.isWindowVisible(this.sfbHwnd);
+    return Addon.isWindowVisible(this.sfbHwnd);
   }
 
   bringToTop() {
-    AddonWrap.setForegroundWindow(this.sfbHwnd);
+    Addon.setForegroundWindow(this.sfbHwnd);
   }
 
   isMinimized() {
-    return AddonWrap.isWindowMinimized(this.sfbHwnd);
+    return Addon.isWindowMinimized(this.sfbHwnd);
   }
 
   minimize() {
-    AddonWrap.minimizeWindow(this.sfbHwnd);
+    Addon.minimizeWindow(this.sfbHwnd);
   }
 
   restore() {
-    AddonWrap.restoreWindow(this.sfbHwnd);
+    Addon.restoreWindow(this.sfbHwnd);
   }
 
   setPosition(x, y) {
-    // AddonWrap.setPosition ?
+    // Addon.setPosition ?
   }
 
   getRect() {
-    return AddonWrap.getWindowRect(this.sfbHwnd);
+    return Addon.getWindowRect(this.sfbHwnd);
   }
 
   hook() {
-    AddonWrap.setWinEventHookObjectHide((hwnd) => {
+    Addon.setWinEventHookObjectHide((hwnd) => {
       if (hwnd === this.sfbHwnd) {
         this.emit('hide');
       }
     });
-    AddonWrap.setWinEventHookMinimizeStart((hwnd) => {
+    Addon.setWinEventHookMinimizeStart((hwnd) => {
       if (hwnd === this.sfbHwnd) {
         this.emit('minimize-start');
       }
     });
-    AddonWrap.setWinEventHookLocationChange((hwnd) => {
+    Addon.setWinEventHookLocationChange((hwnd) => {
       if (hwnd === this.sfbHwnd) {
         const rect = this.getRect();
         this.emit('move', rect);
       }
     });
-    AddonWrap.setWinEventHookForeground((hwnd) => {
+    Addon.setWinEventHookForeground((hwnd) => {
       if (hwnd === this.sfbHwnd) {
         if (!freezeForeground()) {
           this.emit('foreground');
@@ -167,7 +85,7 @@ class SfbWindow extends Window {
   }
 
   unhook() {
-    AddonWrap.unhookWinEvents();
+    Addon.unhookWinEvents();
   }
 }
 
@@ -182,7 +100,7 @@ class RcWindow extends Window {
   }
 
   static loadHwnd() {
-    return AddonWrap.findWindowHwnd({
+    return Addon.findWindowHwnd({
       className: 'Chrome_WidgetWin_1',
       windowName: 'RingCentral for Skype for Business',
     });
@@ -201,7 +119,7 @@ class RcWindow extends Window {
   }
 
   bringToTop() {
-    AddonWrap.setForegroundWindow(this.rcHwnd);
+    Addon.setForegroundWindow(this.rcHwnd);
   }
 
   isMinimized() {
@@ -305,8 +223,8 @@ class WinWindow extends Window {
     });
   }
 
-  static get AddonWrap() {
-    return AddonWrap;
+  static get Addon() {
+    return Addon;
   }
 
   tie() {
@@ -322,7 +240,7 @@ class WinWindow extends Window {
   destroy() {
     this.rcWindow.unhook();
     this.sfbWindow.unhook();
-    AddonWrap.destroy();
+    Addon.destroy();
   }
 }
 

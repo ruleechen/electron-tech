@@ -130,34 +130,34 @@ ipc.on('async-message', (event, arg) => {
   // method('pong', (error, result) => {
   //   event.sender.send('reply', result);
   // });
-  const wrap = isWin ? dock.WinWindow.AddonWrap : dock.MacWindow.AddonWrap;
-  wrap.testCallback('rulee', (a, b, c) => {
+  const addon = isWin ? dock.WinWindow.Addon : dock.MacWindow.Addon;
+  addon.testCallback('rulee', (a, b, c) => {
     event.sender.send('async-message-reply', a + ' ' + b + ' ' + c);
   });
 });
 
 ipc.on('sync-message', (event, arg) => {
-  const wrap = isWin ? dock.WinWindow.AddonWrap : dock.MacWindow.AddonWrap;
-  event.returnValue = wrap.helloWorld();
+  const addon = isWin ? dock.WinWindow.Addon : dock.MacWindow.Addon;
+  event.returnValue = addon.helloWorld();
 
   if (isWin) {
-    const rcHwnd = wrap.findWindowHwnd({
+    const rcHwnd = addon.findWindowHwnd({
       className: 'Chrome_WidgetWin_1',
-      windowName: 'Hello World!',
+      windowName: 'RingCentral for Skype for Business',
     });
-    const sfbHwnd = wrap.findWindowHwnd({
+    const sfbHwnd = addon.findWindowHwnd({
       className: 'CommunicatorMainWindowClass',
       windowName: 'Skype for Business ',
     });
-    const dd0 = wrap.findWindowHwnd({
+    const dd0 = addon.findWindowHwnd({
       className: 'LyncTabFrameHostWindowClass',
       windowName: null,
     });
-    const dd1 = wrap.findWindowHwnd({
+    const dd1 = addon.findWindowHwnd({
       className: 'LyncConversationWindowClass',
       windowName: null,
     });
-    const dd2 = wrap.findWindowHwnd({
+    const dd2 = addon.findWindowHwnd({
       className: 'NetUIListViewItem',
       windowName: null,
     });

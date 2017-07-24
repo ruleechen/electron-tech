@@ -118,7 +118,51 @@ namespace window_win {
     auto strHwnd = std::string(*arg0);
     // get
     auto hwnd = hwndMap[strHwnd];
-    auto showed = ShowWindow(hwnd, 1);
+    auto showed = ShowWindow(hwnd, SW_SHOWNORMAL);
+    // return
+    args.GetReturnValue().Set(Nan::New(showed));
+  }
+
+  void out_hideWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    // get
+    auto hwnd = hwndMap[strHwnd];
+    auto showed = ShowWindow(hwnd, SW_HIDE);
+    // return
+    args.GetReturnValue().Set(Nan::New(showed));
+  }
+
+  void out_isWindowMinimized(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    // get
+    auto hwnd = hwndMap[strHwnd];
+    auto minimized = IsIconic(hwnd);
+    // return
+    args.GetReturnValue().Set(Nan::New(minimized));
+  }
+
+  void out_minimizeWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    // get
+    auto hwnd = hwndMap[strHwnd];
+    auto showed = ShowWindow(hwnd, SW_MINIMIZE);
+    // return
+    args.GetReturnValue().Set(Nan::New(showed));
+  }
+
+  void out_restoreWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    // get
+    auto hwnd = hwndMap[strHwnd];
+    auto showed = ShowWindow(hwnd, SW_RESTORE);
     // return
     args.GetReturnValue().Set(Nan::New(showed));
   }
@@ -245,6 +289,10 @@ namespace window_win {
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowVisible").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowVisible)->GetFunction());
     exports->Set(Nan::New("showWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_showWindow)->GetFunction());
+    exports->Set(Nan::New("hideWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_hideWindow)->GetFunction());
+    exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
+    exports->Set(Nan::New("minimizeWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_minimizeWindow)->GetFunction());
+    exports->Set(Nan::New("restoreWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_restoreWindow)->GetFunction());
     // event hooks
     exports->Set(Nan::New("unhookWinEvents").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_unhookWinEvents)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectHide").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectHide)->GetFunction());

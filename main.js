@@ -19,20 +19,20 @@ let mainWindow;
 let appTray;
 let dockWindow;
 
-const createWindow = ({ isDock }) => {
+const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 300,
     height: 600,
     show: false,
-    frame: !isDock,
+    frame: true,
     movable: true,
     closable: true,
     resizable: false,
     minimizable: true,
     maximizable: false,
     fullscreenable: false,
-    skipTaskbar: !!isDock,
+    skipTaskbar: false,
   });
 
   // and load the index.html of the app.
@@ -101,9 +101,7 @@ const createWindow = ({ isDock }) => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-  createWindow({
-    isDock: true,
-  });
+  createWindow();
 });
 
 // Quit when all windows are closed.
@@ -119,9 +117,7 @@ app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) {
-    createWindow({
-      isDock: true,
-    });
+    createWindow();
   }
 });
 

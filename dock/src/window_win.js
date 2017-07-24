@@ -100,7 +100,7 @@ class SfbWindow extends Window {
   }
 
   bringToTop() {
-    AddonWrap.bringWindowToTop(this.sfbHwnd);
+    AddonWrap.setForegroundWindow(this.sfbHwnd);
   }
 
   setPosition(x, y) {
@@ -161,7 +161,7 @@ class RcWindow extends Window {
   }
 
   bringToTop() {
-    AddonWrap.bringWindowToTop(this.rcHwnd);
+    AddonWrap.setForegroundWindow(this.rcHwnd);
   }
 
   setPosition(x, y) {
@@ -212,20 +212,22 @@ class WinWindow extends Window {
     this.sfbWindow = new SfbWindow();
     // foreground
     this.rcWindow.on('foreground', () => {
-      this.sfbWindow.bringToTop();
+      setTimeout(() => {
+        this.sfbWindow.bringToTop();
+        this.rcWindow.bringToTop();
+      }, 0);
     });
     this.sfbWindow.on('foreground', () => {
-      this.rcWindow.bringToTop();
+      setTimeout(() => {
+        this.rcWindow.bringToTop();
+        this.sfbWindow.bringToTop();
+      }, 0);
     });
     // move
     this.sfbWindow.on('move', (rect) => {
       // sync position
       this.rcWindow.setPosition(rect.right, rect.top);
     });
-  }
-
-  static get AddonWrap() {
-    return AddonWrap;
   }
 
   tie() {
@@ -241,6 +243,7 @@ class WinWindow extends Window {
   destroy() {
     this.rcWindow.unhook();
     this.sfbWindow.unhook();
+    AddonWrap.destroy();
   }
 }
 

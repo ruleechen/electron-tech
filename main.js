@@ -27,11 +27,12 @@ function createWindow() {
     show: false,
     frame: false,
     movable: false,
-    closable: false,
+    closable: true,
     resizable: false,
     minimizable: true,
     maximizable: false,
     fullscreenable: false,
+    skipTaskbar: true,
   });
 
   // and load the index.html of the app.
@@ -64,14 +65,15 @@ function createWindow() {
     // destroy
     if (dockWindow) {
       dockWindow.destroy();
+      dockWindow = null;
     }
   });
 
-  appTray = new electron.Tray('./app.ico');
+  const appIco = isWin ? './resource/app-win.ico' : './resource/app-mac.png';
+  appTray = new electron.Tray(appIco);
   const contextMenu = electron.Menu.buildFromTemplate([
     {
       label: 'About',
-      // accelerator: 'CmdOrCtrl+R',
       click() {
         console.log('About Clicked');
       },
@@ -87,15 +89,12 @@ function createWindow() {
   } else {
     appTray.setTitle('RingCentral for Skype for Business');
   }
-  appTray.on('click', () => {
-    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
-  });
   if (!isWin) {
     mainWindow.on('show', () => {
-      appTray.setHighlightMode('always')
+      appTray.setHighlightMode('always');
     });
     mainWindow.on('hide', () => {
-      appTray.setHighlightMode('never')
+      appTray.setHighlightMode('never');
     });
   }
 }

@@ -230,6 +230,10 @@ class WinWindow extends Window {
     });
   }
 
+  static get AddonWrap() {
+    return AddonWrap;
+  }
+
   tie() {
     this.rcWindow.hook();
     this.sfbWindow.hook();

@@ -19,20 +19,20 @@ let mainWindow;
 let appTray;
 let dockWindow;
 
-function createWindow() {
+const createWindow = ({ isDock }) => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 300,
     height: 600,
     show: false,
-    frame: false,
-    movable: false,
+    frame: !isDock,
+    movable: true,
     closable: true,
     resizable: false,
     minimizable: true,
     maximizable: false,
     fullscreenable: false,
-    skipTaskbar: true,
+    skipTaskbar: !!isDock,
   });
 
   // and load the index.html of the app.
@@ -56,7 +56,7 @@ function createWindow() {
   });
 
   // Emitted when the window is closed.
-  mainWindow.on('closed', function () {
+  mainWindow.on('closed', () => {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
@@ -69,8 +69,10 @@ function createWindow() {
     }
   });
 
-  const appIco = isWin ? './resource/tray-icon/app-win.ico' : './resource/tray-icon/app-mac.png';
-  appTray = new electron.Tray(appIco);
+  appTray = new electron.Tray(isWin ?
+    './resource/tray-icon/app-win.ico' :
+    './resource/tray-icon/app-mac.png'
+  );
   const contextMenu = electron.Menu.buildFromTemplate([
     {
       label: 'About',
@@ -84,11 +86,7 @@ function createWindow() {
     }
   ]);
   appTray.setContextMenu(contextMenu);
-  if (isWin) {
-    appTray.setToolTip('RingCentral for Skype for Business');
-  } else {
-    appTray.setTitle('RingCentral for Skype for Business');
-  }
+  appTray.setToolTip('RingCentral for Skype for Business');
   if (!isWin) {
     mainWindow.on('show', () => {
       appTray.setHighlightMode('always');
@@ -102,10 +100,14 @@ function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => {
+  createWindow({
+    isDock: true,
+  });
+});
 
 // Quit when all windows are closed.
-app.on('window-all-closed', function () {
+app.on('window-all-closed', () => {
   // On OS X it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== 'darwin') {
@@ -113,51 +115,53 @@ app.on('window-all-closed', function () {
   }
 });
 
-app.on('activate', function () {
+app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) {
-    createWindow();
+    createWindow({
+      isDock: true,
+    });
   }
 });
 
-ipc.on('async-message', function (event, arg) {
+ipc.on('async-message', (event, arg) => {
   // const method = edge.func({
   //   assemblyFile: 'D:/rc/git/favorite/electron-quick-start/csharp/Win32Hook/Win32Hook/bin/Debug/Win32Hook.dll',
   //   typeName: 'Win32Hook.Startup',
   //   methodName: 'Invoke'
   // });
-  // method('pong', function (error, result) {
+  // method('pong', (error, result) => {
   //   event.sender.send('reply', result);
   // });
   const wrap = isWin ? dock.WinWindow.AddonWrap : dock.MacWindow.AddonWrap;
-  wrap.testCallback('rulee', function (a, b, c) {
+  wrap.testCallback('rulee', (a, b, c) => {
     event.sender.send('async-message-reply', a + ' ' + b + ' ' + c);
   });
 });
 
-ipc.on('sync-message', function (event, arg) {
+ipc.on('sync-message', (event, arg) => {
   const wrap = isWin ? dock.WinWindow.AddonWrap : dock.MacWindow.AddonWrap;
   event.returnValue = wrap.helloWorld();
 
   if (isWin) {
-    var rcHwnd = wrap.findWindowHwnd({
+    const rcHwnd = wrap.findWindowHwnd({
       className: 'Chrome_WidgetWin_1',
       windowName: 'Hello World!',
     });
-    var sfbHwnd = wrap.findWindowHwnd({
+    const sfbHwnd = wrap.findWindowHwnd({
       className: 'CommunicatorMainWindowClass',
       windowName: 'Skype for Business ',
     });
-    var dd0 = wrap.findWindowHwnd({
+    const dd0 = wrap.findWindowHwnd({
       className: 'LyncTabFrameHostWindowClass',
       windowName: null,
     });
-    var dd1 = wrap.findWindowHwnd({
+    const dd1 = wrap.findWindowHwnd({
       className: 'LyncConversationWindowClass',
       windowName: null,
     });
-    var dd2 = wrap.findWindowHwnd({
+    const dd2 = wrap.findWindowHwnd({
       className: 'NetUIListViewItem',
       windowName: null,
     });
@@ -166,4 +170,3 @@ ipc.on('sync-message', function (event, arg) {
     console.log('sfbHwnd: ' + sfbHwnd);
   }
 });
-

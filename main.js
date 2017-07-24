@@ -69,7 +69,7 @@ function createWindow() {
     }
   });
 
-  const appIco = isWin ? './resource/app-win.ico' : './resource/app-mac.png';
+  const appIco = isWin ? './resource/tray-icon/app-win.ico' : './resource/tray-icon/app-mac.png';
   appTray = new electron.Tray(appIco);
   const contextMenu = electron.Menu.buildFromTemplate([
     {

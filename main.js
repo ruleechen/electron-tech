@@ -16,6 +16,7 @@ const isWin = /^win/.test(process.platform);
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let appTray;
 let dockWindow;
 
 function createWindow() {
@@ -65,6 +66,38 @@ function createWindow() {
       dockWindow.destroy();
     }
   });
+
+  appTray = new electron.Tray('./app.ico');
+  const contextMenu = electron.Menu.buildFromTemplate([
+    {
+      label: 'About',
+      // accelerator: 'CmdOrCtrl+R',
+      click() {
+        console.log('About Clicked');
+      },
+    },
+    {
+      label: 'Quit',
+      role: 'quit',
+    }
+  ]);
+  appTray.setContextMenu(contextMenu);
+  if (isWin) {
+    appTray.setToolTip('RingCentral for Skype for Business');
+  } else {
+    appTray.setTitle('RingCentral for Skype for Business');
+  }
+  appTray.on('click', () => {
+    mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+  });
+  if (!isWin) {
+    mainWindow.on('show', () => {
+      appTray.setHighlightMode('always')
+    });
+    mainWindow.on('hide', () => {
+      appTray.setHighlightMode('never')
+    });
+  }
 }
 
 // This method will be called when Electron has finished

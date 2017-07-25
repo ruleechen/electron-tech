@@ -1,0 +1,13 @@
+{
+  "extends": "airbnb-base",
+  "plugins": [
+    "import"
+  ],
+  "rules": {
+    "semi": 0,
+    "no-unused-vars": 1,
+    "linebreak-style": "off",
+    "global-require": 1,
+    "import/no-dynamic-require": 1
+  }
+}

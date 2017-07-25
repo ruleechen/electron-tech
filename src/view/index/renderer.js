@@ -8,17 +8,17 @@ const btnSync = document.getElementById('btnSync');
 const btnAsync = document.getElementById('btnAsync');
 
 const showResult = function (html) {
-    document.getElementById('result').innerHTML = html;
+  document.getElementById('result').innerHTML = html;
 };
 
 btnAsync.addEventListener('click', function (ev) {
-    ipc.send('async-message', 'ping');
+  ipc.send('async-message', 'ping');
 });
 ipc.on('async-message-reply', function (ev, arg) {
-    showResult(`async-response: ${JSON.stringify(arg)}`);
+  showResult(`async-response: ${JSON.stringify(arg)}`);
 });
 
 btnSync.addEventListener('click', function (ev) {
-    const reply = ipc.sendSync('sync-message', 'ping');
-    showResult(`sync-response: ${JSON.stringify(reply)}`);
+  const reply = ipc.sendSync('sync-message', 'ping');
+  showResult(`sync-response: ${JSON.stringify(reply)}`);
 });

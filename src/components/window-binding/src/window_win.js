@@ -152,11 +152,11 @@ class RcWindow extends EventEmitter {
   }
 
   hook() {
-    this.browserWindow.on('move', this._move = () => {
+    this.browserWindow.on('move', this.moveHandler = () => {
       const rect = this.getRect();
       this.emit('move', rect);
     });
-    this.browserWindow.on('focus', this._focus = () => {
+    this.browserWindow.on('focus', this.focusHandler = () => {
       if (!freezeForeground()) {
         this.emit('foreground');
       }
@@ -164,13 +164,13 @@ class RcWindow extends EventEmitter {
   }
 
   unhook() {
-    if (this._move) {
-      this.browserWindow.removeListener('move', this._move);
-      delete this._move;
+    if (this.moveHandler) {
+      this.browserWindow.removeListener('move', this.moveHandler);
+      delete this.moveHandler;
     }
-    if (this._focus) {
-      this.browserWindow.removeListener('focus', this._focus);
-      delete this._focus;
+    if (this.focusHandler) {
+      this.browserWindow.removeListener('focus', this.focusHandler);
+      delete this.focusHandler;
     }
   }
 }

@@ -58,5 +58,5 @@ namespace window_mac {
     exports->Set(Nan::New("destroy").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_destroy)->GetFunction());
   }
 
-  NODE_MODULE(windowbinding, Init);
+  NODE_MODULE(wb, Init);
 }

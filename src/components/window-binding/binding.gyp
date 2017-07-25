@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "dock",
+      "target_name": "window-binding",
       "include_dirs": [
         "<!(node -e \"require('nan')\")"
       ],

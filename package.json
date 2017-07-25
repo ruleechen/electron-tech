@@ -1,25 +1,19 @@
 {
-  "name": "electron-quick-start",
+  "name": "electron-tech",
   "version": "1.0.0",
-  "description": "A minimal Electron application",
+  "description": "Electron application for SfB",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
   },
-  "repository": "https://github.com/electron/electron-quick-start",
   "keywords": [
     "Electron",
     "quick",
-    "start",
-    "tutorial",
-    "demo"
+    "start"
   ],
-  "author": "GitHub",
-  "license": "CC0-1.0",
+  "author": "RingCentral Integration Team",
+  "license": "UNLICENSED",
   "devDependencies": {
     "electron": "~1.6.2"
-  },
-  "dependencies": {
-    "electron-edge": "^6.5.5"
   }
 }

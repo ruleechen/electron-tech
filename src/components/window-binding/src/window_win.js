@@ -2,11 +2,12 @@
 * windows window
 */
 
+const EventEmitter = require('events');
 const Window = require('./window');
 const Addon = require('./helpers/addon_win');
 const freezeForeground = require('./helpers/freeze').create({ timeout: 200 });
 
-class SfbWindow extends Window {
+class SfbWindow extends EventEmitter {
   constructor() {
     super();
     this.sfbHwnd = SfbWindow.loadHwnd();
@@ -89,7 +90,7 @@ class SfbWindow extends Window {
   }
 }
 
-class RcWindow extends Window {
+class RcWindow extends EventEmitter {
   constructor({ browserWindow }) {
     super();
     this.browserWindow = browserWindow;
@@ -227,7 +228,7 @@ class WinWindow extends Window {
     return Addon;
   }
 
-  tie() {
+  bind() {
     this.rcWindow.hook();
     this.sfbWindow.hook();
     // show window
@@ -237,7 +238,7 @@ class WinWindow extends Window {
     this.rcWindow.setPosition(rect.right, rect.top);
   }
 
-  destroy() {
+  unbind() {
     this.rcWindow.unhook();
     this.sfbWindow.unhook();
     Addon.destroy();

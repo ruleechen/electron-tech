@@ -8,16 +8,13 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-
-// const edge = require('electron-edge');
-const dock = require('./dock');
-const isWin = /^win/.test(process.platform);
+const WindowBinding = require('./src/components/window-binding');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let mainWindowBinding;
 let appTray;
-let dockWindow;
 
 const createWindow = () => {
   // Create the browser window.
@@ -37,9 +34,9 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'index.html'),
+    pathname: path.join(__dirname, 'src/view/index/index.html'),
     protocol: 'file:',
-    slashes: true
+    slashes: true,
   }));
 
   // Open the DevTools.
@@ -47,12 +44,10 @@ const createWindow = () => {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    if (isWin) {
-      dockWindow = new dock.WinWindow({
-        browserWindow: mainWindow,
-      });
-      dockWindow.tie();
-    }
+    mainWindowBinding = new WindowBinding.Core({
+      browserWindow: mainWindow,
+    });
+    mainWindowBinding.bind();
   });
 
   // Emitted when the window is closed.
@@ -63,15 +58,15 @@ const createWindow = () => {
     mainWindow = null;
 
     // destroy
-    if (dockWindow) {
-      dockWindow.destroy();
-      dockWindow = null;
+    if (mainWindowBinding) {
+      mainWindowBinding.unbind();
+      mainWindowBinding = null;
     }
   });
 
-  appTray = new electron.Tray(isWin ?
-    './resource/tray-icon/app-win.ico' :
-    './resource/tray-icon/app-mac.png'
+  appTray = new electron.Tray(WindowBinding.isWindows ?
+    './src/resources/tray-icon/app-win.ico' :
+    './src/resources/tray-icon/app-mac.png'
   );
   const contextMenu = electron.Menu.buildFromTemplate([
     {
@@ -83,11 +78,11 @@ const createWindow = () => {
     {
       label: 'Quit',
       role: 'quit',
-    }
+    },
   ]);
   appTray.setContextMenu(contextMenu);
   appTray.setToolTip('RingCentral for Skype for Business');
-  if (!isWin) {
+  if (WindowBinding.isMacOS) {
     mainWindow.on('show', () => {
       appTray.setHighlightMode('always');
     });
@@ -122,25 +117,17 @@ app.on('activate', () => {
 });
 
 ipc.on('async-message', (event, arg) => {
-  // const method = edge.func({
-  //   assemblyFile: 'D:/rc/git/favorite/electron-quick-start/csharp/Win32Hook/Win32Hook/bin/Debug/Win32Hook.dll',
-  //   typeName: 'Win32Hook.Startup',
-  //   methodName: 'Invoke'
-  // });
-  // method('pong', (error, result) => {
-  //   event.sender.send('reply', result);
-  // });
-  const addon = isWin ? dock.WinWindow.Addon : dock.MacWindow.Addon;
+  const addon = WindowBinding.Core.Addon;
   addon.testCallback('rulee', (a, b, c) => {
     event.sender.send('async-message-reply', a + ' ' + b + ' ' + c);
   });
 });
 
 ipc.on('sync-message', (event, arg) => {
-  const addon = isWin ? dock.WinWindow.Addon : dock.MacWindow.Addon;
+  const addon = WindowBinding.Core.Addon;
   event.returnValue = addon.helloWorld();
 
-  if (isWin) {
+  if (WindowBinding.isWindows) {
     const rcHwnd = addon.findWindowHwnd({
       className: 'Chrome_WidgetWin_1',
       windowName: 'RingCentral for Skype for Business',

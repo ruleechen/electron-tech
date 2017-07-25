@@ -1,0 +1,14 @@
+{
+  "name": "connect-netsdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "RingCentral Integration Team",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "electron-edge": "^6.5.5"
+  }
+}

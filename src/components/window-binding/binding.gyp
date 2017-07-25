@@ -1,7 +1,7 @@
 {
   "targets": [
     {
-      "target_name": "window-binding",
+      "target_name": "windowbinding",
       "include_dirs": [
         "<!(node -e \"require('nan')\")"
       ],

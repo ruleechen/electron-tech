@@ -64,10 +64,10 @@ const createWindow = () => {
     }
   });
 
-  appTray = new electron.Tray(WindowBinding.isWindows ?
+  const iconPath = WindowBinding.isWindows ?
     './src/resources/tray-icon/app-win.ico' :
-    './src/resources/tray-icon/app-mac.png'
-  );
+    './src/resources/tray-icon/app-mac.png';
+  appTray = new electron.Tray(iconPath);
   const contextMenu = electron.Menu.buildFromTemplate([
     {
       label: 'About',
@@ -119,7 +119,7 @@ app.on('activate', () => {
 ipc.on('async-message', (event, arg) => {
   const addon = WindowBinding.Core.Addon;
   addon.testCallback('rulee', (a, b, c) => {
-    event.sender.send('async-message-reply', a + ' ' + b + ' ' + c);
+    event.sender.send('async-message-reply', `${a} ${b} ${c}`);
   });
 });
 
@@ -148,8 +148,8 @@ ipc.on('sync-message', (event, arg) => {
       className: 'NetUIListViewItem',
       windowName: null,
     });
-    console.log('found: ' + dd2);
-    console.log('rcHwnd: ' + rcHwnd);
-    console.log('sfbHwnd: ' + sfbHwnd);
+    console.log(`found: ${dd2}`);
+    console.log(`rcHwnd: ${rcHwnd}`);
+    console.log(`sfbHwnd: ${sfbHwnd}`);
   }
 });

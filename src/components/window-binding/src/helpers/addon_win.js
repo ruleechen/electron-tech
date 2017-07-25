@@ -2,7 +2,7 @@
 * windows addon
 */
 
-const addon = require('bindings')('window-binding.node');
+const addon = require('bindings')('windowbinding.node');
 
 class AddonClass {
   static helloWorld() {

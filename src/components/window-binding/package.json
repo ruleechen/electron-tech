@@ -6,8 +6,8 @@
   "scripts": {
     "install": "node-gyp rebuild --target=1.6.11 --arch=x64 --dist-url=https://atom.io/download/electron"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "RingCentral Integration Team",
+  "license": "UNLICENSED",
   "gypfile": true,
   "dependencies": {
     "bindings": "^1.2.1",

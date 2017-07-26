@@ -61,6 +61,9 @@ namespace window_win {
     auto setted = BringWindowToTop(hwnd);
     // return
     args.GetReturnValue().Set(Nan::New(setted));
+
+    // SetWindowPos(windowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOSIZE|SWP_NOMOVE);  // it will bring window at the most front but makes it Always On Top.
+    // SetWindowPos(windowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOSIZE|SWP_NOMOVE); // just after above call, disable Always on Top.
   }
 
   void out_setForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {

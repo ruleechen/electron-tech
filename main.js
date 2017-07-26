@@ -152,4 +152,10 @@ ipc.on('sync-message', (event, arg) => {
     console.log(`rcHwnd: ${rcHwnd}`);
     console.log(`sfbHwnd: ${sfbHwnd}`);
   }
+  if (WindowBinding.isMacOS) {
+    const windowId = addon.findWindowId({
+      ownerName: 'Skype for Business',
+    });
+    console.log(windowId);
+  }
 });

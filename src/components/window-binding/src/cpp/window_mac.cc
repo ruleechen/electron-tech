@@ -5,11 +5,15 @@
 #include <nan.h>
 #include <string>
 #include <iostream>
+#include <objc/objc.h>
+#include <objc/objc-runtime.h>
+#include <CoreFoundation/CoreFoundation.h>
 #include <ApplicationServices/ApplicationServices.h>
 
 namespace window_mac {
 
   CFArrayRef createWindowDescription(CGWindowID id) {
+    // NSWindow* nsWindow;
     CGWindowID idCArray[1] = { id };
     CFArrayRef idArray = CFArrayCreate(NULL, (const void **) idCArray, 1, NULL);
     CFArrayRef result = CGWindowListCreateDescriptionFromArray(idArray);
@@ -33,7 +37,7 @@ namespace window_mac {
       windowName = std::string(*arg1);
     }
     // find
-    int id = 0;
+    int id = -1;
     if (ownerNameIsString || windowNameIsString) {
       // all windows
       CFArrayRef windowList = CGWindowListCopyWindowInfo(
@@ -45,47 +49,67 @@ namespace window_mac {
         CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
         CFNumberRef window_id = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowNumber));
         CFNumberRef window_layer = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowLayer));
-        if (window_id && window_layer) {
-          // layer
-          int layer;
-          CFNumberGetValue(window_layer, kCFNumberIntType, &layer);
-          if (layer != 0) {
-            continue;
+        if (!window_id || !window_layer) {
+          continue;
+        }
+        // layer
+        int layer;
+        CFNumberGetValue(window_layer, kCFNumberIntType, &layer);
+        if (layer != 0) {
+          continue;
+        }
+        // owner
+        bool ownerNameMatched = false;
+        if (ownerNameIsString) {
+          std::string owner;
+          CFStringRef window_owner = reinterpret_cast<CFStringRef>(CFDictionaryGetValue(window, kCGWindowOwnerName));
+          CFIndex ownerBufferSize = CFStringGetLength(window_owner) + 1;
+          char ownerBuffer[ownerBufferSize];
+          if (CFStringGetCString(window_owner, ownerBuffer, ownerBufferSize, kCFStringEncodingUTF8)) {
+            owner = std::string(ownerBuffer);
           }
-          // owner
-          Boolean ownerNameMatched = FALSE;
-          if (ownerNameIsString) {
-            std::string owner;
-            CFStringRef window_owner = reinterpret_cast<CFStringRef>(CFDictionaryGetValue(window, kCGWindowOwnerName));
-            CFIndex ownerBufferSize = CFStringGetLength(window_owner) + 1;
-            char ownerBuffer[ownerBufferSize];
-            if (CFStringGetCString(window_owner, ownerBuffer, ownerBufferSize, kCFStringEncodingUTF8)) {
-              owner = std::string(ownerBuffer);
-            }
-            ownerNameMatched = owner == ownerName;
+          ownerNameMatched = owner == ownerName;
+        }
+        // title
+        bool windowNameMatched = false;
+        if (windowNameIsString) {
+          std::string title;
+          CFStringRef window_title = reinterpret_cast<CFStringRef>(CFDictionaryGetValue(window, kCGWindowName));
+          CFIndex titleBufferSize = CFStringGetLength(window_title) + 1;
+          char titleBuffer[titleBufferSize];
+          if (CFStringGetCString(window_title, titleBuffer, titleBufferSize, kCFStringEncodingUTF8)) {
+            title = std::string(titleBuffer);
           }
-          // title
-          Boolean windowNameMatched = FALSE;
-          if (windowNameIsString) {
-            std::string title;
-            CFStringRef window_title = reinterpret_cast<CFStringRef>(CFDictionaryGetValue(window, kCGWindowName));
-            CFIndex titleBufferSize = CFStringGetLength(window_title) + 1;
-            char titleBuffer[titleBufferSize];
-            if (CFStringGetCString(window_title, titleBuffer, titleBufferSize, kCFStringEncodingUTF8)) {
-              title = std::string(titleBuffer);
-            }
-            windowNameMatched = title == windowName;
-          }
-          // detect
-          if (ownerNameMatched && windowNameMatched) {
-            CFNumberGetValue(window_id, kCFNumberIntType, &id);
-          }
+          windowNameMatched = title == windowName;
+        }
+        // detect
+        if (ownerNameMatched || windowNameMatched) {
+          CFNumberGetValue(window_id, kCFNumberIntType, &id);
+          break;
         }
       }
       CFRelease(windowList);
     }
     // ret
     args.GetReturnValue().Set(Nan::New(id));
+  }
+
+  void out_isWindowMinimized(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    CGWindowID id = args[0]->Int32Value();
+    // get
+    CFArrayRef idArray = CFArrayCreate(NULL, reinterpret_cast<const void **>(&id), 1, NULL);
+    CFArrayRef windowArray = CGWindowListCreateDescriptionFromArray(idArray);
+    bool minimized = false;
+    if (windowArray && CFArrayGetCount(windowArray)) {
+      CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowArray, 0));
+      CFBooleanRef onScreen =  reinterpret_cast<CFBooleanRef>(CFDictionaryGetValue(window, kCGWindowIsOnscreen));
+      minimized = !onScreen;
+    }
+    CFRelease(idArray);
+    CFRelease(windowArray);
+    // return
+    args.GetReturnValue().Set(Nan::New(minimized));
   }
 
   void out_helloWorld(const Nan::FunctionCallbackInfo<v8::Value>& args) {

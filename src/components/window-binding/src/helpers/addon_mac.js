@@ -5,6 +5,10 @@
 const addon = require('bindings')('wb.node');
 
 class AddonClass {
+  static findWindowId({ ownerName, windowName }) {
+    return addon.findWindowId(ownerName, windowName);
+  }
+
   static helloWorld() {
     return addon.helloWorld('test');
   }

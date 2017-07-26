@@ -17,16 +17,82 @@ namespace window_mac {
     return result;
   }
 
-  void test() {
-    CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
-    CFRelease(windowList);
+  void out_findWindowId(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    std::string ownerName;
+    auto ownerNameIsString = args[0]->IsString();
+    if (ownerNameIsString) {
+      v8::String::Utf8Value arg0(args[0]);
+      ownerName = std::string(*arg0);
+    }
+    // argument 1
+    std::string windowName;
+    auto windowNameIsString = args[1]->IsString();
+    if (windowNameIsString) {
+      v8::String::Utf8Value arg1(args[1]);
+      windowName = std::string(*arg1);
+    }
+    // find
+    int id = 0;
+    if (ownerNameIsString || windowNameIsString) {
+      // all windows
+      CFArrayRef windowList = CGWindowListCopyWindowInfo(
+        kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+        kCGNullWindowID
+      );
+      CFIndex count = CFArrayGetCount(windowList);
+      for (CFIndex i = 0; i < count; ++i) {
+        CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
+        CFNumberRef window_id = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowNumber));
+        CFNumberRef window_layer = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowLayer));
+        if (window_id && window_layer) {
+          // layer
+          int layer;
+          CFNumberGetValue(window_layer, kCFNumberIntType, &layer);
+          if (layer != 0) {
+            continue;
+          }
+          // owner
+          Boolean ownerNameMatched = FALSE;
+          if (ownerNameIsString) {
+            std::string owner;
+            CFStringRef window_owner = reinterpret_cast<CFStringRef>(CFDictionaryGetValue(window, kCGWindowOwnerName));
+            CFIndex ownerBufferSize = CFStringGetLength(window_owner) + 1;
+            char ownerBuffer[ownerBufferSize];
+            if (CFStringGetCString(window_owner, ownerBuffer, ownerBufferSize, kCFStringEncodingUTF8)) {
+              owner = std::string(ownerBuffer);
+            }
+            ownerNameMatched = owner == ownerName;
+          }
+          // title
+          Boolean windowNameMatched = FALSE;
+          if (windowNameIsString) {
+            std::string title;
+            CFStringRef window_title = reinterpret_cast<CFStringRef>(CFDictionaryGetValue(window, kCGWindowName));
+            CFIndex titleBufferSize = CFStringGetLength(window_title) + 1;
+            char titleBuffer[titleBufferSize];
+            if (CFStringGetCString(window_title, titleBuffer, titleBufferSize, kCFStringEncodingUTF8)) {
+              title = std::string(titleBuffer);
+            }
+            windowNameMatched = title == windowName;
+          }
+          // detect
+          if (ownerNameMatched && windowNameMatched) {
+            CFNumberGetValue(window_id, kCFNumberIntType, &id);
+          }
+        }
+      }
+      CFRelease(windowList);
+    }
+    // ret
+    args.GetReturnValue().Set(Nan::New(id));
   }
 
   void out_helloWorld(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
     auto name = std::string(*arg0);
-    // return back rect
+    // return back
     auto ret = "Hello " + name;
     std::cout << "Message: " << ret << std::endl;
     args.GetReturnValue().Set(Nan::New(ret).ToLocalChecked());
@@ -51,6 +117,8 @@ namespace window_mac {
   }
 
   void Init(v8::Local<v8::Object> exports) {
+    // exports
+    exports->Set(Nan::New("findWindowId").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowId)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());

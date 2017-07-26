@@ -67,6 +67,13 @@
     "xstddef": "cpp",
     "xstring": "cpp",
     "xtr1common": "cpp",
-    "*.rh": "cpp"
+    "*.rh": "cpp",
+    "__bit_reference": "cpp",
+    "bitset": "cpp",
+    "__locale": "cpp",
+    "__config": "cpp",
+    "__split_buffer": "cpp",
+    "deque": "cpp",
+    "queue": "cpp"
   }
 }

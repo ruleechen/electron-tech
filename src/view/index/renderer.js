@@ -7,18 +7,18 @@ const ipc = require('electron').ipcRenderer;
 const btnSync = document.getElementById('btnSync');
 const btnAsync = document.getElementById('btnAsync');
 
-const showResult = function (html) {
+const showResult = (html) => {
   document.getElementById('result').innerHTML = html;
 };
 
-btnAsync.addEventListener('click', function (ev) {
+btnAsync.addEventListener('click', () => {
   ipc.send('async-message', 'ping');
 });
-ipc.on('async-message-reply', function (ev, arg) {
+ipc.on('async-message-reply', (ev, arg) => {
   showResult(`async-response: ${JSON.stringify(arg)}`);
 });
 
-btnSync.addEventListener('click', function (ev) {
+btnSync.addEventListener('click', () => {
   const reply = ipc.sendSync('sync-message', 'ping');
   showResult(`sync-response: ${JSON.stringify(reply)}`);
 });

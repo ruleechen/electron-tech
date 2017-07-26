@@ -5,10 +5,6 @@
 const addon = require('bindings')('wb.node');
 
 class AddonClass {
-  static helloWorld() {
-    return addon.helloWorld('test');
-  }
-
   static findWindowHwnd({ className, windowName }) {
     return addon.findWindowHwnd(className, windowName);
   }
@@ -75,6 +71,10 @@ class AddonClass {
 
   static setWinEventHookForeground(callback) {
     return addon.setWinEventHookForeground(callback);
+  }
+
+  static helloWorld() {
+    return addon.helloWorld('test');
   }
 
   static testCallback(name, callback) {

@@ -256,7 +256,7 @@ namespace window_win {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
     auto name = std::string(*arg0);
-    // return back rect
+    // return back
     auto ret = "Hello " + name;
     std::cout << "Message: " << ret << std::endl;
     args.GetReturnValue().Set(Nan::New(ret).ToLocalChecked());
@@ -283,6 +283,7 @@ namespace window_win {
   }
 
   void Init(v8::Local<v8::Object> exports) {
+    // exports
     exports->Set(Nan::New("findWindowHwnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowHwnd)->GetFunction());
     exports->Set(Nan::New("bringWindowToTop").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_bringWindowToTop)->GetFunction());
     exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
@@ -293,7 +294,7 @@ namespace window_win {
     exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
     exports->Set(Nan::New("minimizeWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_minimizeWindow)->GetFunction());
     exports->Set(Nan::New("restoreWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_restoreWindow)->GetFunction());
-    // event hooks
+    // export event hooks
     exports->Set(Nan::New("unhookWinEvents").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_unhookWinEvents)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectHide").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectHide)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectShow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectShow)->GetFunction());

@@ -10,11 +10,11 @@ class AddonClass {
   }
 
   static bringWindowToTop(hwnd) {
-    return !!addon.bringWindowToTop(hwnd);
+    return addon.bringWindowToTop(hwnd);
   }
 
   static setForegroundWindow(hwnd) {
-    return !!addon.setForegroundWindow(hwnd);
+    return addon.setForegroundWindow(hwnd);
   }
 
   static getWindowRect(hwnd) {
@@ -22,27 +22,27 @@ class AddonClass {
   }
 
   static isWindowVisible(hwnd) {
-    return !!addon.isWindowVisible(hwnd);
+    return addon.isWindowVisible(hwnd);
   }
 
   static showWindow(hwnd) {
-    return !!addon.showWindow(hwnd);
+    return addon.showWindow(hwnd);
   }
 
   static hideWindow(hwnd) {
-    return !!addon.hideWindow(hwnd);
+    return addon.hideWindow(hwnd);
   }
 
   static isWindowMinimized(hwnd) {
-    return !!addon.isWindowMinimized(hwnd);
+    return addon.isWindowMinimized(hwnd);
   }
 
   static minimizeWindow(hwnd) {
-    return !!addon.minimizeWindow(hwnd);
+    return addon.minimizeWindow(hwnd);
   }
 
   static restoreWindow(hwnd) {
-    return !!addon.restoreWindow(hwnd);
+    return addon.restoreWindow(hwnd);
   }
 
   static unhookWinEvents() {

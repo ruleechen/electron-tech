@@ -60,7 +60,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto setted = BringWindowToTop(hwnd);
     // return
-    args.GetReturnValue().Set(Nan::New(setted));
+    auto ret = (setted == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
 
     // SetWindowPos(windowHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOSIZE|SWP_NOMOVE);  // it will bring window at the most front but makes it Always On Top.
     // SetWindowPos(windowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_SHOWWINDOW|SWP_NOSIZE|SWP_NOMOVE); // just after above call, disable Always on Top.
@@ -74,7 +75,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto setted = SetForegroundWindow(hwnd);
     // return
-    args.GetReturnValue().Set(Nan::New(setted));
+    auto ret = (setted == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
   }
 
   void out_getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -112,7 +114,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto visible = IsWindowVisible(hwnd);
     // return
-    args.GetReturnValue().Set(Nan::New(visible));
+    auto ret = (visible == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
   }
 
   void out_showWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -123,7 +126,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_SHOWNORMAL);
     // return
-    args.GetReturnValue().Set(Nan::New(showed));
+    auto ret = (showed == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
   }
 
   void out_hideWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -134,7 +138,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_HIDE);
     // return
-    args.GetReturnValue().Set(Nan::New(showed));
+    auto ret = (showed == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
   }
 
   void out_isWindowMinimized(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -145,7 +150,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto minimized = IsIconic(hwnd);
     // return
-    args.GetReturnValue().Set(Nan::New(minimized));
+    auto ret = (minimized == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
   }
 
   void out_minimizeWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -156,7 +162,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_MINIMIZE);
     // return
-    args.GetReturnValue().Set(Nan::New(showed));
+    auto ret = (showed == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
   }
 
   void out_restoreWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -167,7 +174,8 @@ namespace window_win {
     auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_RESTORE);
     // return
-    args.GetReturnValue().Set(Nan::New(showed));
+    auto ret = (showed == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
   }
 
   void CALLBACK WrapWinEventProc(HWINEVENTHOOK hWinEventHook, DWORD eventType, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
@@ -216,43 +224,49 @@ namespace window_win {
 
   void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     WrapUnhookWinEvent();
-    args.GetReturnValue().Set(Nan::New(TRUE));
+    args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
     auto eventType = EVENT_OBJECT_HIDE;
     WrapSetWinEventHook(eventType, callback);
+    args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectShow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
     auto eventType = EVENT_OBJECT_SHOW;
     WrapSetWinEventHook(eventType, callback);
+    args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookLocationChange(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
     auto eventType = EVENT_OBJECT_LOCATIONCHANGE;
     WrapSetWinEventHook(eventType, callback);
+    args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookMinimizeStart(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
     auto eventType = EVENT_SYSTEM_MINIMIZESTART;
     WrapSetWinEventHook(eventType, callback);
+    args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookMinimizeEnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
     auto eventType = EVENT_SYSTEM_MINIMIZEEND;
     WrapSetWinEventHook(eventType, callback);
+    args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
     auto eventType = EVENT_SYSTEM_FOREGROUND;
     WrapSetWinEventHook(eventType, callback);
+    args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_helloWorld(const Nan::FunctionCallbackInfo<v8::Value>& args) {

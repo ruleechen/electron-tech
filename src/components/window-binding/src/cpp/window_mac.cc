@@ -41,7 +41,7 @@ namespace window_mac {
     if (ownerNameIsString || windowNameIsString) {
       // all windows
       CFArrayRef windowList = CGWindowListCopyWindowInfo(
-        kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+        kCGWindowListExcludeDesktopElements, //kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
         kCGNullWindowID
       );
       CFIndex count = CFArrayGetCount(windowList);
@@ -104,7 +104,7 @@ namespace window_mac {
     if (windowArray && CFArrayGetCount(windowArray)) {
       CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowArray, 0));
       CFBooleanRef onScreen =  reinterpret_cast<CFBooleanRef>(CFDictionaryGetValue(window, kCGWindowIsOnscreen));
-      minimized = !onScreen;
+      minimized = (onScreen != kCFBooleanTrue);
     }
     CFRelease(idArray);
     CFRelease(windowArray);
@@ -143,6 +143,7 @@ namespace window_mac {
   void Init(v8::Local<v8::Object> exports) {
     // exports
     exports->Set(Nan::New("findWindowId").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowId)->GetFunction());
+    exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());

@@ -10,6 +10,10 @@ class AddonClass {
     return id === -1 ? null : id;
   }
 
+  static isWindowMinimized(id) {
+    return addon.isWindowMinimized(id);
+  }
+
   static helloWorld() {
     return addon.helloWorld('test');
   }

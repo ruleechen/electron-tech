@@ -7,18 +7,18 @@
 #include <iostream>
 #include <objc/objc.h>
 #include <objc/objc-runtime.h>
+// #include <Foundation/Foundation.h>
+// #include <AppKit/NSRunningApplication.h>
+// #include <AppKit/NSWorkspace.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <ApplicationServices/ApplicationServices.h>
 
 namespace window_mac {
 
-  CFArrayRef createWindowDescription(CGWindowID id) {
-    // NSWindow* nsWindow;
-    CGWindowID idCArray[1] = { id };
-    CFArrayRef idArray = CFArrayCreate(NULL, (const void **) idCArray, 1, NULL);
-    CFArrayRef result = CGWindowListCreateDescriptionFromArray(idArray);
-    CFRelease(idArray);
-    return result;
+  void test() {
+    CGEventRef event = CGEventCreate(nil);
+    CGPoint loc = CGEventGetLocation(event);
+    CFRelease(event);
   }
 
   void out_findWindowId(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -94,6 +94,36 @@ namespace window_mac {
     args.GetReturnValue().Set(Nan::New(id));
   }
 
+  void out_setForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    CGWindowID windowId = args[0]->Int32Value();
+    // get proc id
+    ProcessSerialNumber procId;
+    CFArrayRef idArray = CFArrayCreate(NULL, reinterpret_cast<const void **>(&windowId), 1, NULL);
+    CFArrayRef windowArray = CGWindowListCreateDescriptionFromArray(idArray);
+    if (windowArray && CFArrayGetCount(windowArray)) {
+      CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowArray, 0));
+      CFNumberRef ownerPid =  reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowOwnerPID));
+      if (ownerPid) {
+        CFNumberGetValue(ownerPid, kCFNumberIntType, &procId);
+      }
+    }
+    CFRelease(idArray);
+    CFRelease(windowArray);
+    // apply
+    bool setted = false;
+    ProcessSerialNumber frontProcId;
+    if (noErr == GetFrontProcess(&frontProcId)) {
+      Boolean isSame;
+      if (noErr == SameProcess(&frontProcId, &procId, &isSame) && !isSame) {
+        SetFrontProcess(&procId);
+        setted = true;
+      }
+    }
+    // return
+    args.GetReturnValue().Set(Nan::New(setted));
+  }
+
   void out_getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     CGWindowID windowId = args[0]->Int32Value();
@@ -115,6 +145,8 @@ namespace window_mac {
         bottom = windowRect.origin.y + windowRect.size.height;
       }
     }
+    CFRelease(idArray);
+    CFRelease(windowArray);
     // return rect
     auto isolate = args.GetIsolate();
     auto obj = v8::Object::New(isolate);
@@ -131,13 +163,13 @@ namespace window_mac {
     // get
     CFArrayRef idArray = CFArrayCreate(NULL, reinterpret_cast<const void **>(&windowId), 1, NULL);
     CFArrayRef windowArray = CGWindowListCreateDescriptionFromArray(idArray);
-    CFRelease(idArray);
     bool minimized = false;
     if (windowArray && CFArrayGetCount(windowArray)) {
       CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowArray, 0));
       CFBooleanRef onScreen =  reinterpret_cast<CFBooleanRef>(CFDictionaryGetValue(window, kCGWindowIsOnscreen));
       minimized = (onScreen != kCFBooleanTrue);
     }
+    CFRelease(idArray);
     CFRelease(windowArray);
     // return
     args.GetReturnValue().Set(Nan::New(minimized));
@@ -174,6 +206,7 @@ namespace window_mac {
   void Init(v8::Local<v8::Object> exports) {
     // exports
     exports->Set(Nan::New("findWindowId").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowId)->GetFunction());
+    exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
     // test

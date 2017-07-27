@@ -10,6 +10,10 @@ class AddonClass {
     return id === -1 ? null : id;
   }
 
+  static setForegroundWindow(windowId) {
+    return addon.setForegroundWindow(windowId);
+  }
+
   static getWindowRect(windowId) {
     const rect = addon.getWindowRect(windowId);
     const isEmpty =

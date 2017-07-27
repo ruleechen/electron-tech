@@ -161,5 +161,9 @@ ipc.on('sync-message', (event, arg) => {
     console.log(`windowId: ${windowId}`);
     console.log(`minimized: ${minimized}`);
     console.log(`rect: ${JSON.stringify(rect)}`);
+    setTimeout(() => {
+      const setted = addon.setForegroundWindow(windowId);
+      console.log(`foreground: ${setted}`);
+    }, 1000);
   }
 });

@@ -18,7 +18,13 @@ class AddonClass {
   }
 
   static getWindowRect(hwnd) {
-    return addon.getWindowRect(hwnd);
+    const rect = addon.getWindowRect(hwnd);
+    const isEmpty =
+      (rect.left === 0) &&
+      (rect.top === 0) &&
+      (rect.right === 0) &&
+      (rect.bottom === 0);
+    return isEmpty ? null : rect;
   }
 
   static isWindowVisible(hwnd) {

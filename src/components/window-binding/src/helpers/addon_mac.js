@@ -10,8 +10,18 @@ class AddonClass {
     return id === -1 ? null : id;
   }
 
-  static isWindowMinimized(id) {
-    return addon.isWindowMinimized(id);
+  static getWindowRect(windowId) {
+    const rect = addon.getWindowRect(windowId);
+    const isEmpty =
+      (rect.left === 0) &&
+      (rect.top === 0) &&
+      (rect.right === 0) &&
+      (rect.bottom === 0);
+    return isEmpty ? null : rect;
+  }
+
+  static isWindowMinimized(windowId) {
+    return addon.isWindowMinimized(windowId);
   }
 
   static helloWorld() {

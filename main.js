@@ -157,7 +157,9 @@ ipc.on('sync-message', (event, arg) => {
       ownerName: 'Skype for Business',
     });
     const minimized = addon.isWindowMinimized(windowId);
+    const rect = addon.getWindowRect(windowId);
     console.log(`windowId: ${windowId}`);
     console.log(`minimized: ${minimized}`);
+    console.log(`rect: ${JSON.stringify(rect)}`);
   }
 });

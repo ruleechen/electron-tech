@@ -94,19 +94,50 @@ namespace window_mac {
     args.GetReturnValue().Set(Nan::New(id));
   }
 
+  void out_getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    CGWindowID windowId = args[0]->Int32Value();
+    // get rect
+    int left = 0;
+    int top = 0;
+    int right = 0;
+    int bottom = 0;
+    CFArrayRef idArray = CFArrayCreate(NULL, reinterpret_cast<const void **>(&windowId), 1, NULL);
+    CFArrayRef windowArray = CGWindowListCreateDescriptionFromArray(idArray);
+    if (windowArray && CFArrayGetCount(windowArray)) {
+      CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowArray, 0));
+      CFDictionaryRef windowBounds = reinterpret_cast<CFDictionaryRef>(CFDictionaryGetValue(window, kCGWindowBounds));
+      CGRect windowRect;
+      if (windowBounds && CGRectMakeWithDictionaryRepresentation(windowBounds, &windowRect)) {
+        left = windowRect.origin.x;
+        top = windowRect.origin.y;
+        right = windowRect.origin.x + windowRect.size.width;
+        bottom = windowRect.origin.y + windowRect.size.height;
+      }
+    }
+    // return rect
+    auto isolate = args.GetIsolate();
+    auto obj = v8::Object::New(isolate);
+    obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(left));
+    obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(top));
+    obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(right));
+    obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(bottom));
+    args.GetReturnValue().Set(obj);
+  }
+
   void out_isWindowMinimized(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    CGWindowID id = args[0]->Int32Value();
+    CGWindowID windowId = args[0]->Int32Value();
     // get
-    CFArrayRef idArray = CFArrayCreate(NULL, reinterpret_cast<const void **>(&id), 1, NULL);
+    CFArrayRef idArray = CFArrayCreate(NULL, reinterpret_cast<const void **>(&windowId), 1, NULL);
     CFArrayRef windowArray = CGWindowListCreateDescriptionFromArray(idArray);
+    CFRelease(idArray);
     bool minimized = false;
     if (windowArray && CFArrayGetCount(windowArray)) {
       CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowArray, 0));
       CFBooleanRef onScreen =  reinterpret_cast<CFBooleanRef>(CFDictionaryGetValue(window, kCGWindowIsOnscreen));
       minimized = (onScreen != kCFBooleanTrue);
     }
-    CFRelease(idArray);
     CFRelease(windowArray);
     // return
     args.GetReturnValue().Set(Nan::New(minimized));
@@ -143,6 +174,7 @@ namespace window_mac {
   void Init(v8::Local<v8::Object> exports) {
     // exports
     exports->Set(Nan::New("findWindowId").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowId)->GetFunction());
+    exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());

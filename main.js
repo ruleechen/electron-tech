@@ -165,5 +165,10 @@ ipc.on('sync-message', (event, arg) => {
       const setted = addon.setForegroundWindow(windowId);
       console.log(`foreground: ${setted}`);
     }, 1000);
+
+    addon.setMouseDragEvent(() => {
+      const rect1 = addon.getWindowRect(windowId);
+      console.log(`rect: ${JSON.stringify(rect1)}`);
+    });
   }
 });

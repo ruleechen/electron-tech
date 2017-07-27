@@ -10,16 +10,23 @@
 // #include <Foundation/Foundation.h>
 // #include <AppKit/NSRunningApplication.h>
 // #include <AppKit/NSWorkspace.h>
+#include <AvailabilityMacros.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <ApplicationServices/ApplicationServices.h>
 
 namespace window_mac {
 
-  void test() {
-    CGEventRef event = CGEventCreate(nil);
-    CGPoint loc = CGEventGetLocation(event);
-    CFRelease(event);
-  }
+  bool mouseEventRegistered = false;
+  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> function;
+
+  // void test() {
+  //   int id = 0;
+  //   auto app = AXUIElementCreateApplication(id);
+
+  //   CGEventRef event = CGEventCreate(nil);
+  //   CGPoint loc = CGEventGetLocation(event);
+  //   CFRelease(event);
+  // }
 
   void out_findWindowId(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
@@ -175,6 +182,57 @@ namespace window_mac {
     args.GetReturnValue().Set(Nan::New(minimized));
   }
 
+  CGEventRef CGEventCallback(CGEventTapProxy Proxy, CGEventType Type, CGEventRef Event, void *Refcon) {
+    switch(Type) {
+      case kCGEventLeftMouseDragged:
+      case kCGEventRightMouseDragged: {
+        auto isolate = v8::Isolate::GetCurrent();
+        auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
+        Nan::Callback callback(funcLocal);
+        const unsigned argc = 1;
+        v8::Local<v8::Value> argv[argc] = {
+          Nan::New(1)
+        };
+        callback.Call(argc, argv);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+    return Event;
+  }
+
+  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> GetCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    auto isolate = args.GetIsolate();
+    auto arg0 = v8::Handle<v8::Function>::Cast(args[0]);
+    v8::Persistent<v8::Function> callback(isolate, arg0);
+    return callback;
+  }
+
+  void out_setMouseDragEvent(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    if (!mouseEventRegistered) {
+      auto eventMask = ((1 << kCGEventLeftMouseDragged) | (1 << kCGEventRightMouseDragged));
+      auto eventTap = CGEventTapCreate(
+        kCGSessionEventTap,
+        kCGHeadInsertEventTap,
+        kCGEventTapOptionDefault,
+        eventMask,
+        CGEventCallback,
+        NULL
+      );
+      CFRunLoopAddSource(
+        CFRunLoopGetMain(),
+        CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0),
+        kCFRunLoopCommonModes
+      );
+      mouseEventRegistered = true;
+    }
+    //
+    function = GetCallback(args);
+    args.GetReturnValue().Set(Nan::New(true));
+  }
+
   void out_helloWorld(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
@@ -209,6 +267,8 @@ namespace window_mac {
     exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
+    // events
+    exports->Set(Nan::New("setMouseDragEvent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setMouseDragEvent)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());

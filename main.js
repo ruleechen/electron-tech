@@ -166,7 +166,8 @@ ipc.on('sync-message', (event, arg) => {
       console.log(`foreground: ${setted}`);
     }, 1000);
 
-    addon.setMouseDragEvent(() => {
+    addon.setWinEventHookForeground((pid) => {
+      console.log(`pid: ${pid}`);
       const rect1 = addon.getWindowRect(windowId);
       console.log(`rect: ${JSON.stringify(rect1)}`);
     });

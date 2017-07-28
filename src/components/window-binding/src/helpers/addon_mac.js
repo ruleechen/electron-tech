@@ -28,8 +28,8 @@ class AddonClass {
     return addon.isWindowMinimized(windowId);
   }
 
-  static setMouseDragEvent(callback) {
-    return addon.setMouseDragEvent(callback);
+  static setWinEventHookForeground(callback) {
+    return addon.setWinEventHookForeground(callback);
   }
 
   static helloWorld() {

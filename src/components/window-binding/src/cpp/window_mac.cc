@@ -5,6 +5,7 @@
 #include <nan.h>
 #include <string>
 #include <iostream>
+#include <map>
 #include <objc/objc.h>
 #include <objc/objc-runtime.h>
 // #include <Foundation/Foundation.h>
@@ -16,8 +17,14 @@
 
 namespace window_mac {
 
+  std::map<int, int> winId2Pid;
+  std::map<int, int> winPid2Id;
+
   bool mouseEventRegistered = false;
-  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> function;
+  int previousEventPid;
+  CFRunLoopSourceRef mouseEventSource;
+
+  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> foregroundCallback;
 
   // void test() {
   //   int id = 0;
@@ -45,6 +52,7 @@ namespace window_mac {
     }
     // find
     int id = -1;
+    int pid = -1;
     if (ownerNameIsString || windowNameIsString) {
       // all windows
       CFArrayRef windowList = CGWindowListCopyWindowInfo(
@@ -55,8 +63,9 @@ namespace window_mac {
       for (CFIndex i = 0; i < count; ++i) {
         CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
         CFNumberRef window_id = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowNumber));
+        CFNumberRef window_pid =  reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowOwnerPID));
         CFNumberRef window_layer = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowLayer));
-        if (!window_id || !window_layer) {
+        if (!window_id || !window_pid || !window_layer) {
           continue;
         }
         // layer
@@ -92,12 +101,15 @@ namespace window_mac {
         // detect
         if (ownerNameMatched || windowNameMatched) {
           CFNumberGetValue(window_id, kCFNumberIntType, &id);
+          CFNumberGetValue(window_pid, kCFNumberIntType, &pid);
           break;
         }
       }
       CFRelease(windowList);
     }
     // ret
+    winId2Pid[id] = pid;
+    winPid2Id[pid] = id;
     args.GetReturnValue().Set(Nan::New(id));
   }
 
@@ -182,25 +194,148 @@ namespace window_mac {
     args.GetReturnValue().Set(Nan::New(minimized));
   }
 
-  CGEventRef CGEventCallback(CGEventTapProxy Proxy, CGEventType Type, CGEventRef Event, void *Refcon) {
-    switch(Type) {
-      case kCGEventLeftMouseDragged:
-      case kCGEventRightMouseDragged: {
-        auto isolate = v8::Isolate::GetCurrent();
-        auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
-        Nan::Callback callback(funcLocal);
-        const unsigned argc = 1;
-        v8::Local<v8::Value> argv[argc] = {
-          Nan::New(1)
-        };
-        callback.Call(argc, argv);
+  CGEventRef CGEventCallback(CGEventTapProxy proxy, CGEventType eventType, CGEventRef event, void *refcon) {
+    // https://developer.apple.com/documentation/coregraphics/1455885-cgeventgetintegervaluefield
+    // https://developer.apple.com/documentation/coregraphics/cgeventfield?language=objc
+    int eventPid = CGEventGetIntegerValueField(event, kCGEventTargetUnixProcessID);
+    if (previousEventPid != eventPid) {
+      previousEventPid = eventPid;
+      if (!foregroundCallback.IsEmpty()) {
+        auto foregroundIsolate = v8::Isolate::GetCurrent();
+        auto foregroundCallbackLocal = v8::Local<v8::Function>::New(foregroundIsolate, foregroundCallback);
+        const unsigned foregroundArgc = 1;
+        v8::Local<v8::Value> foregroundArgv[foregroundArgc] = { Nan::New(eventPid) };
+        Nan::Callback foregroundCallbackLocalWrap(foregroundCallbackLocal);
+        foregroundCallbackLocalWrap.Call(foregroundArgc, foregroundArgv);
+      }
+      std::cout << "Process Changed" << std::endl;
+    }
+
+    return event;
+
+    // https://developer.apple.com/documentation/coregraphics/cgeventflags?language=objc
+    CGEventFlags flags = CGEventGetFlags(event);
+    if ((flags & kCGEventFlagMaskShift) != 0) {
+      std::cout << "kCGEventFlagMaskShift" << std::endl;
+    } else if ((flags & kCGEventFlagMaskControl) != 0) {
+      std::cout << "kCGEventFlagMaskControl" << std::endl;
+    } else if ((flags & kCGEventFlagMaskCommand) != 0) {
+      std::cout << "kCGEventFlagMaskCommand" << std::endl;
+    } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
+      std::cout << "kCGEventFlagMaskAlternate" << std::endl;
+    } else if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
+      std::cout << "kCGEventFlagMaskAlphaShift" << std::endl;
+    } else if ((flags & kCGEventFlagMaskNumericPad) != 0) {
+      std::cout << "kCGEventFlagMaskNumericPad" << std::endl;
+    }
+
+    switch(eventType) {
+      case kCGEventTapDisabledByTimeout: {
+        std::cout << "kCGEventTapDisabledByTimeout" << std::endl;
+        break;
+      }
+      case kCGEventTapDisabledByUserInput: {
+        std::cout << "kCGEventTapDisabledByUserInput" << std::endl;
+        break;
+      }
+      case kCGEventMouseMoved: {
+        std::cout << "kCGEventMouseMoved" << std::endl;
+        break;
+      }
+      case kCGEventLeftMouseDown: {
+        std::cout << "kCGEventLeftMouseDown" << std::endl;
+        break;
+      }
+      case kCGEventLeftMouseUp: {
+        std::cout << "kCGEventLeftMouseUp" << std::endl;
+        break;
+      }
+      case kCGEventLeftMouseDragged: {
+        std::cout << "kCGEventLeftMouseDragged" << std::endl;
+        break;
+      }
+      case kCGEventRightMouseDown: {
+        std::cout << "kCGEventRightMouseDown" << std::endl;
+        break;
+      }
+      case kCGEventRightMouseUp: {
+        std::cout << "kCGEventRightMouseUp" << std::endl;
+        break;
+      }
+      case kCGEventRightMouseDragged:  {
+        std::cout << "kCGEventRightMouseDragged" << std::endl;
+        break;
+      }
+      case kCGEventKeyDown: {
+        std::cout << "kCGEventKeyDown" << std::endl;
+        break;
+      }
+      case kCGEventKeyUp: {
+        std::cout << "kCGEventKeyUp" << std::endl;
         break;
       }
       default: {
         break;
       }
     }
-    return Event;
+    return event;
+  }
+
+  void StartEventHooks() {
+    if (mouseEventRegistered) {
+      return;
+    }
+    // https://developer.apple.com/documentation/coregraphics/cgeventtype?language=objc
+    CGEventMask eventMask = (
+      // https://developer.apple.com/documentation/coregraphics/cgeventmask?language=objc
+      CGEventMaskBit(kCGEventMouseMoved) |
+      CGEventMaskBit(kCGEventLeftMouseDragged) |
+      CGEventMaskBit(kCGEventLeftMouseDown) |
+      CGEventMaskBit(kCGEventLeftMouseUp) |
+      CGEventMaskBit(kCGEventRightMouseDragged) |
+      CGEventMaskBit(kCGEventRightMouseDown) |
+      CGEventMaskBit(kCGEventRightMouseUp) |
+      CGEventMaskBit(kCGEventKeyDown) |
+      CGEventMaskBit(kCGEventKeyUp)
+    );
+    // https://developer.apple.com/documentation/coregraphics/1454426-cgeventtapcreate
+    CFMachPortRef eventTap = CGEventTapCreate(
+      kCGAnnotatedSessionEventTap, // https://developer.apple.com/documentation/coregraphics/cgeventtaplocation?language=objc
+      kCGTailAppendEventTap, // https://developer.apple.com/documentation/coregraphics/cgeventtapplacement?language=objc
+      kCGEventTapOptionDefault, // https://developer.apple.com/documentation/coregraphics/cgeventtapoptions?language=objc
+      eventMask,
+      CGEventCallback,
+      NULL // refcon
+    );
+    // https://developer.apple.com/documentation/corefoundation/1400928-cfmachportcreaterunloopsource?language=objc
+    CFRunLoopSourceRef eventSource = CFMachPortCreateRunLoopSource(
+      kCFAllocatorDefault,
+      eventTap,
+      0
+    );
+    // https://developer.apple.com/documentation/corefoundation/1543356-cfrunloopaddsource?language=objc
+    CFRunLoopAddSource(
+      CFRunLoopGetMain(),
+      eventSource,
+      kCFRunLoopCommonModes
+    );
+    // set flag
+    mouseEventSource = eventSource;
+    mouseEventRegistered = true;
+  }
+
+  void UnhookEvents() {
+    if (!mouseEventRegistered) {
+      return;
+    }
+    // https://developer.apple.com/documentation/corefoundation/1542145-cfrunloopremovesource?language=objc
+    CFRunLoopRemoveSource(
+      CFRunLoopGetMain(),
+      mouseEventSource,
+      kCFRunLoopCommonModes
+    );
+    // set flag
+    mouseEventRegistered = false;
   }
 
   v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> GetCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -210,26 +345,9 @@ namespace window_mac {
     return callback;
   }
 
-  void out_setMouseDragEvent(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    if (!mouseEventRegistered) {
-      auto eventMask = ((1 << kCGEventLeftMouseDragged) | (1 << kCGEventRightMouseDragged));
-      auto eventTap = CGEventTapCreate(
-        kCGSessionEventTap,
-        kCGHeadInsertEventTap,
-        kCGEventTapOptionDefault,
-        eventMask,
-        CGEventCallback,
-        NULL
-      );
-      CFRunLoopAddSource(
-        CFRunLoopGetMain(),
-        CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0),
-        kCFRunLoopCommonModes
-      );
-      mouseEventRegistered = true;
-    }
-    //
-    function = GetCallback(args);
+  void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    StartEventHooks();
+    foregroundCallback = GetCallback(args);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -258,6 +376,7 @@ namespace window_mac {
   }
 
   void out_destroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    UnhookEvents();
     std::cout << "destroy done" << std::endl;
   }
 
@@ -268,7 +387,7 @@ namespace window_mac {
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
     // events
-    exports->Set(Nan::New("setMouseDragEvent").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setMouseDragEvent)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());

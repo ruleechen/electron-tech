@@ -28,8 +28,16 @@ class AddonClass {
     return addon.isWindowMinimized(windowId);
   }
 
+  static unhookWinEvents() {
+    return addon.unhookWinEvents();
+  }
+
   static setWinEventHookForeground(callback) {
     return addon.setWinEventHookForeground(callback);
+  }
+
+  static setWinEventHookLocationChange(callback) {
+    return addon.setWinEventHookLocationChange(callback);
   }
 
   static helloWorld() {

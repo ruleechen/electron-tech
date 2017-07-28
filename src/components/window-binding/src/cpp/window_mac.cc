@@ -25,6 +25,7 @@ namespace window_mac {
   CFRunLoopSourceRef mouseEventSource;
 
   v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> foregroundCallback;
+  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> locationChangeCallback;
 
   // void test() {
   //   int id = 0;
@@ -203,28 +204,27 @@ namespace window_mac {
       if (!foregroundCallback.IsEmpty()) {
         auto foregroundIsolate = v8::Isolate::GetCurrent();
         auto foregroundCallbackLocal = v8::Local<v8::Function>::New(foregroundIsolate, foregroundCallback);
+        auto windowId = winPid2Id[eventPid];
         const unsigned foregroundArgc = 1;
-        v8::Local<v8::Value> foregroundArgv[foregroundArgc] = { Nan::New(eventPid) };
+        v8::Local<v8::Value> foregroundArgv[foregroundArgc] = { Nan::New(windowId) };
         Nan::Callback foregroundCallbackLocalWrap(foregroundCallbackLocal);
         foregroundCallbackLocalWrap.Call(foregroundArgc, foregroundArgv);
       }
       std::cout << "Process Changed" << std::endl;
     }
 
-    return event;
-
     // https://developer.apple.com/documentation/coregraphics/cgeventflags?language=objc
     CGEventFlags flags = CGEventGetFlags(event);
     if ((flags & kCGEventFlagMaskShift) != 0) {
-      std::cout << "kCGEventFlagMaskShift" << std::endl;
+      // std::cout << "kCGEventFlagMaskShift" << std::endl;
     } else if ((flags & kCGEventFlagMaskControl) != 0) {
-      std::cout << "kCGEventFlagMaskControl" << std::endl;
+      // std::cout << "kCGEventFlagMaskControl" << std::endl;
     } else if ((flags & kCGEventFlagMaskCommand) != 0) {
-      std::cout << "kCGEventFlagMaskCommand" << std::endl;
+      // std::cout << "kCGEventFlagMaskCommand" << std::endl;
     } else if ((flags & kCGEventFlagMaskAlternate) != 0) {
-      std::cout << "kCGEventFlagMaskAlternate" << std::endl;
+      // std::cout << "kCGEventFlagMaskAlternate" << std::endl;
     } else if ((flags & kCGEventFlagMaskAlphaShift) != 0) {
-      std::cout << "kCGEventFlagMaskAlphaShift" << std::endl;
+      // std::cout << "kCGEventFlagMaskAlphaShift" << std::endl;
     } else if ((flags & kCGEventFlagMaskNumericPad) != 0) {
       std::cout << "kCGEventFlagMaskNumericPad" << std::endl;
     }
@@ -239,31 +239,40 @@ namespace window_mac {
         break;
       }
       case kCGEventMouseMoved: {
-        std::cout << "kCGEventMouseMoved" << std::endl;
+        // std::cout << "kCGEventMouseMoved" << std::endl;
         break;
       }
       case kCGEventLeftMouseDown: {
-        std::cout << "kCGEventLeftMouseDown" << std::endl;
+        // std::cout << "kCGEventLeftMouseDown" << std::endl;
         break;
       }
       case kCGEventLeftMouseUp: {
-        std::cout << "kCGEventLeftMouseUp" << std::endl;
+        // std::cout << "kCGEventLeftMouseUp" << std::endl;
         break;
       }
       case kCGEventLeftMouseDragged: {
-        std::cout << "kCGEventLeftMouseDragged" << std::endl;
+        if (winPid2Id.count(eventPid) != 0 && !locationChangeCallback.IsEmpty()) {
+          auto locationChangeIsolate = v8::Isolate::GetCurrent();
+          auto locationChangeCallbackLocal = v8::Local<v8::Function>::New(locationChangeIsolate, locationChangeCallback);
+          auto windowId = winPid2Id[eventPid];
+          const unsigned locationChangeArgc = 1;
+          v8::Local<v8::Value> locationChangeArgv[locationChangeArgc] = { Nan::New(windowId) };
+          Nan::Callback locationChangeCallbackLocalWrap(locationChangeCallbackLocal);
+          locationChangeCallbackLocalWrap.Call(locationChangeArgc, locationChangeArgv);
+        }
+        // std::cout << "kCGEventLeftMouseDragged" << std::endl;
         break;
       }
       case kCGEventRightMouseDown: {
-        std::cout << "kCGEventRightMouseDown" << std::endl;
+        // std::cout << "kCGEventRightMouseDown" << std::endl;
         break;
       }
       case kCGEventRightMouseUp: {
-        std::cout << "kCGEventRightMouseUp" << std::endl;
+        // std::cout << "kCGEventRightMouseUp" << std::endl;
         break;
       }
       case kCGEventRightMouseDragged:  {
-        std::cout << "kCGEventRightMouseDragged" << std::endl;
+        // std::cout << "kCGEventRightMouseDragged" << std::endl;
         break;
       }
       case kCGEventKeyDown: {
@@ -345,9 +354,20 @@ namespace window_mac {
     return callback;
   }
 
+  void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    UnhookEvents();
+    args.GetReturnValue().Set(Nan::New(true));
+  }
+
   void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     StartEventHooks();
     foregroundCallback = GetCallback(args);
+    args.GetReturnValue().Set(Nan::New(true));
+  }
+
+  void out_setWinEventHookLocationChange(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    StartEventHooks();
+    locationChangeCallback = GetCallback(args);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -386,8 +406,10 @@ namespace window_mac {
     exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());
-    // events
+    // export event hooks
+    exports->Set(Nan::New("unhookWinEvents").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_unhookWinEvents)->GetFunction());
     exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookLocationChange").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookLocationChange)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());

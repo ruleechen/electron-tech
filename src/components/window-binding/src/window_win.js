@@ -10,10 +10,10 @@ const freezeForeground = require('./helpers/freeze').create({ timeout: 200 });
 class SfbWindow extends EventEmitter {
   constructor() {
     super();
-    this.sfbHwnd = SfbWindow.loadHwnd();
-    if (!this.sfbHwnd) {
-      throw new Error('"sfbHwnd" notfound');
-    }
+    SfbWindow.monitorHwnd((hwnd) => {
+      this.sfbHwnd = hwnd;
+      this.emit('inited', hwnd);
+    });
   }
 
   static loadHwnd() {
@@ -21,6 +21,24 @@ class SfbWindow extends EventEmitter {
       className: 'CommunicatorMainWindowClass',
       windowName: 'Skype for Business ',
     });
+  }
+
+  static monitorHwnd(done) {
+    setTimeout(() => {
+      let hwnd = SfbWindow.loadHwnd();
+      if (hwnd) {
+        done(hwnd);
+        return;
+      }
+      Addon.setWinEventHookObjectCreate(() => {
+        if (!hwnd) {
+          hwnd = SfbWindow.loadHwnd();
+          if (hwnd) {
+            done(hwnd);
+          }
+        }
+      });
+    }, 0);
   }
 
   show() {
@@ -222,6 +240,11 @@ class WinWindow extends Window {
       // sync position
       this.rcWindow.setPosition(rect.right, rect.top);
     });
+    this.sfbWindow.on('inited', () => {
+      this.sfbWindow.show();
+      const rect = this.sfbWindow.getRect();
+      this.rcWindow.setPosition(rect.right, rect.top);
+    });
   }
 
   static get Addon() {
@@ -231,11 +254,6 @@ class WinWindow extends Window {
   bind() {
     this.rcWindow.hook();
     this.sfbWindow.hook();
-    // show window
-    this.sfbWindow.show();
-    // sync position
-    const rect = this.sfbWindow.getRect();
-    this.rcWindow.setPosition(rect.right, rect.top);
   }
 
   unbind() {

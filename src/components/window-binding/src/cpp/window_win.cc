@@ -183,9 +183,9 @@ namespace window_win {
       return;
     }
     std::string strHwnd = converHwndToString(hwnd);
-    if (hwndMap.count(strHwnd) == 0) {
-      return;
-    }
+    // if (hwndMap.count(strHwnd) == 0) {
+    //   return;
+    // }
     auto isolate = v8::Isolate::GetCurrent();
     auto function = callbackMap[eventType];
     auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
@@ -224,6 +224,13 @@ namespace window_win {
 
   void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     WrapUnhookWinEvent();
+    args.GetReturnValue().Set(Nan::New(true));
+  }
+
+  void out_setWinEventHookObjectCreate(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    auto callback = GetCallback(args);
+    auto eventType = EVENT_OBJECT_CREATE;
+    WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -313,6 +320,7 @@ namespace window_win {
     exports->Set(Nan::New("restoreWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_restoreWindow)->GetFunction());
     // export event hooks
     exports->Set(Nan::New("unhookWinEvents").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_unhookWinEvents)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookObjectCreate").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectCreate)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectHide").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectHide)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectShow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectShow)->GetFunction());
     exports->Set(Nan::New("setWinEventHookLocationChange").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookLocationChange)->GetFunction());

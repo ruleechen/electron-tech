@@ -38,6 +38,7 @@ class SfbWindow extends EventEmitter {
           changed(hwnd);
         }
       };
+      setInterval(cb, 512);
       Addon.setWinEventHookObjectCreate(cb);
       Addon.setWinEventHookObjectDestroy(cb);
     }, 0);

@@ -29,13 +29,16 @@ class SfbWindow extends EventEmitter {
     setTimeout(() => {
       let windowId = SfbWindow.loadWindowId();
       changed(windowId);
-      setInterval(() => {
+      const cb = () => {
         const ret = SfbWindow.loadWindowId();
         if (ret !== windowId) {
           windowId = ret;
           changed(windowId);
         }
-      }, 512);
+      };
+      setInterval(cb, 512);
+      // Addon.setWinEventHookObjectCreate(cb);
+      // Addon.setWinEventHookObjectDestroy(cb);
     }, 0);
   }
 
@@ -93,7 +96,9 @@ class SfbWindow extends EventEmitter {
     });
     Addon.setWinEventHookForeground((windowId) => {
       if (windowId === this.sfbWindowId) {
-        this.emit('foreground');
+        this.emit('foreground-in');
+      } else {
+        this.emit('foreground-out');
       }
     });
   }
@@ -208,7 +213,7 @@ class MacWindow extends Window {
         this.rcWindow.bringToTop();
       }, 0);
     });
-    this.sfbWindow.on('foreground', () => {
+    this.sfbWindow.on('foreground-in', () => {
       if (this.rcWindow.isMinimized()) {
         this.rcWindow.restore();
         return;
@@ -221,6 +226,15 @@ class MacWindow extends Window {
         this.rcWindow.bringToTop();
         this.sfbWindow.bringToTop();
       }, 0);
+    });
+    this.sfbWindow.on('foreground-out', () => {
+      if (this.rcWindow.isMinimized()) {
+        return;
+      }
+      if (!this.rcWindow.isVisible()) {
+        return;
+      }
+      this.rcWindow.hide();
     });
 
     this.sfbWindow.on('hide', () => {

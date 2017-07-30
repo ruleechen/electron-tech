@@ -59,6 +59,10 @@ class AddonClass {
     return addon.setWinEventHookObjectCreate(callback);
   }
 
+  static setWinEventHookObjectDestroy(callback) {
+    return addon.setWinEventHookObjectDestroy(callback);
+  }
+
   static setWinEventHookObjectHide(callback) {
     return addon.setWinEventHookObjectHide(callback);
   }

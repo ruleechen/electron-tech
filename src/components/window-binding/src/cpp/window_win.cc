@@ -241,6 +241,13 @@ namespace window_win {
     args.GetReturnValue().Set(Nan::New(true));
   }
 
+  void out_setWinEventHookObjectDestroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    auto callback = GetCallback(args);
+    auto eventType = EVENT_OBJECT_DESTROY;
+    WrapSetWinEventHook(eventType, callback);
+    args.GetReturnValue().Set(Nan::New(true));
+  }
+
   void out_setWinEventHookObjectShow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
     auto eventType = EVENT_OBJECT_SHOW;
@@ -321,6 +328,7 @@ namespace window_win {
     // export event hooks
     exports->Set(Nan::New("unhookWinEvents").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_unhookWinEvents)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectCreate").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectCreate)->GetFunction());
+    exports->Set(Nan::New("setWinEventHookObjectDestroy").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectDestroy)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectHide").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectHide)->GetFunction());
     exports->Set(Nan::New("setWinEventHookObjectShow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookObjectShow)->GetFunction());
     exports->Set(Nan::New("setWinEventHookLocationChange").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookLocationChange)->GetFunction());

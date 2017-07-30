@@ -9,10 +9,14 @@ const Addon = require('./helpers/addon_mac');
 class SfbWindow extends EventEmitter {
   constructor() {
     super();
-    this.sfbWindowId = SfbWindow.loadWindowId();
-    if (!this.sfbWindowId) {
-      throw new Error('"sfbWindowId" notfound');
-    }
+    SfbWindow.monitorWindowId((windowId) => {
+      this.sfbWindowId = windowId;
+      if (windowId) {
+        this.emit('inited');
+      } else {
+        this.emit('losed');
+      }
+    });
   }
 
   static loadWindowId() {
@@ -21,39 +25,62 @@ class SfbWindow extends EventEmitter {
     });
   }
 
+  static monitorWindowId(changed) {
+    setTimeout(() => {
+      let windowId = SfbWindow.loadWindowId();
+      changed(windowId);
+      setInterval(() => {
+        const ret = SfbWindow.loadWindowId();
+        if (ret !== windowId) {
+          windowId = ret;
+          changed(windowId);
+        }
+      }, 512);
+    }, 0);
+  }
+
   show() {
+    // if (!this.sfbHwnd) { return; }
     // Addon.showWindow(this.sfbHwnd);
   }
 
   hide() {
+    // if (!this.sfbHwnd) { return; }
     // Addon.hideWindow(this.sfbHwnd);
   }
 
   isVisible() {
+    // if (!this.sfbHwnd) { return false; }
     // return Addon.isWindowVisible(this.sfbHwnd);
   }
 
   bringToTop() {
+    // if (!this.sfbHwnd) { return; }
     // Addon.setForegroundWindow(this.sfbHwnd);
   }
 
   isMinimized() {
+    if (!this.sfbWindowId) { return false; }
     return Addon.isWindowMinimized(this.sfbWindowId);
   }
 
   minimize() {
+    // if (!this.sfbHwnd) { return; }
     // Addon.minimizeWindow(this.sfbHwnd);
   }
 
   restore() {
+    // if (!this.sfbHwnd) { return; }
     // Addon.restoreWindow(this.sfbHwnd);
   }
 
   setPosition(x, y) {
+    // if (!this.sfbHwnd) { return; }
     // Addon.setPosition ?
   }
 
   getRect() {
+    if (!this.sfbWindowId) { return null; }
     return Addon.getWindowRect(this.sfbWindowId);
   }
 
@@ -105,6 +132,7 @@ class RcWindow extends EventEmitter {
   }
 
   bringToTop() {
+    // if (!this.rcHwnd) { return; }
     // Addon.setForegroundWindow(this.rcHwnd);
   }
 
@@ -121,7 +149,7 @@ class RcWindow extends EventEmitter {
   }
 
   setPosition(x, y) {
-    if (x === -32000 || y === -32000) { return; }
+    // if (x === -32000 || y === -32000) { return; }
     this.browserWindow.setPosition(x, y);
   }
 
@@ -162,10 +190,10 @@ class RcWindow extends EventEmitter {
 class MacWindow extends Window {
   constructor({ browserWindow }) {
     super();
-    // new
+
     this.rcWindow = new RcWindow({ browserWindow });
     this.sfbWindow = new SfbWindow();
-    // foreground
+
     this.rcWindow.on('foreground', () => {
       if (this.sfbWindow.isMinimized()) {
         this.sfbWindow.restore();
@@ -194,16 +222,25 @@ class MacWindow extends Window {
         this.sfbWindow.bringToTop();
       }, 0);
     });
+
     this.sfbWindow.on('hide', () => {
       this.rcWindow.hide();
     });
     this.sfbWindow.on('minimize-start', () => {
       this.rcWindow.minimize();
     });
-    // move
+
     this.sfbWindow.on('move', (rect) => {
-      // sync position
       this.rcWindow.setPosition(rect.right, rect.top);
+    });
+
+    this.sfbWindow.on('inited', () => {
+      this.sfbWindow.show();
+      const rect = this.sfbWindow.getRect();
+      this.rcWindow.setPosition(rect.right, rect.top);
+    });
+    this.sfbWindow.on('losed', () => {
+      this.sfbWindow.hide();
     });
   }
 
@@ -214,11 +251,6 @@ class MacWindow extends Window {
   bind() {
     this.rcWindow.hook();
     this.sfbWindow.hook();
-    // show window
-    this.sfbWindow.show();
-    // sync position
-    const rect = this.sfbWindow.getRect();
-    this.rcWindow.setPosition(rect.right, rect.top);
   }
 
   unbind() {

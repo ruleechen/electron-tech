@@ -12,7 +12,11 @@ class SfbWindow extends EventEmitter {
     super();
     SfbWindow.monitorHwnd((hwnd) => {
       this.sfbHwnd = hwnd;
-      this.emit('inited', hwnd);
+      if (hwnd) {
+        this.emit('inited');
+      } else {
+        this.emit('losed');
+      }
     });
   }
 
@@ -23,57 +27,64 @@ class SfbWindow extends EventEmitter {
     });
   }
 
-  static monitorHwnd(done) {
+  static monitorHwnd(changed) {
     setTimeout(() => {
       let hwnd = SfbWindow.loadHwnd();
-      if (hwnd) {
-        done(hwnd);
-        return;
-      }
-      Addon.setWinEventHookObjectCreate(() => {
-        if (!hwnd) {
-          hwnd = SfbWindow.loadHwnd();
-          if (hwnd) {
-            done(hwnd);
-          }
+      changed(hwnd);
+      const cb = () => {
+        const ret = SfbWindow.loadHwnd();
+        if (ret !== hwnd) {
+          hwnd = ret;
+          changed(hwnd);
         }
-      });
+      };
+      Addon.setWinEventHookObjectCreate(cb);
+      Addon.setWinEventHookObjectDestroy(cb);
     }, 0);
   }
 
   show() {
+    if (!this.sfbHwnd) { return; }
     Addon.showWindow(this.sfbHwnd);
   }
 
   hide() {
+    if (!this.sfbHwnd) { return; }
     Addon.hideWindow(this.sfbHwnd);
   }
 
   isVisible() {
+    if (!this.sfbHwnd) { return false; }
     return Addon.isWindowVisible(this.sfbHwnd);
   }
 
   bringToTop() {
+    if (!this.sfbHwnd) { return; }
     Addon.setForegroundWindow(this.sfbHwnd);
   }
 
   isMinimized() {
+    if (!this.sfbHwnd) { return false; }
     return Addon.isWindowMinimized(this.sfbHwnd);
   }
 
   minimize() {
+    if (!this.sfbHwnd) { return; }
     Addon.minimizeWindow(this.sfbHwnd);
   }
 
   restore() {
+    if (!this.sfbHwnd) { return; }
     Addon.restoreWindow(this.sfbHwnd);
   }
 
   setPosition(x, y) {
+    // if (!this.sfbHwnd) { return; }
     // Addon.setPosition ?
   }
 
   getRect() {
+    if (!this.sfbHwnd) { return null; }
     return Addon.getWindowRect(this.sfbHwnd);
   }
 
@@ -138,6 +149,7 @@ class RcWindow extends EventEmitter {
   }
 
   bringToTop() {
+    if (!this.rcHwnd) { return; }
     Addon.setForegroundWindow(this.rcHwnd);
   }
 
@@ -197,10 +209,10 @@ class RcWindow extends EventEmitter {
 class WinWindow extends Window {
   constructor({ browserWindow }) {
     super();
-    // new
+
     this.rcWindow = new RcWindow({ browserWindow });
     this.sfbWindow = new SfbWindow();
-    // foreground
+
     this.rcWindow.on('foreground', () => {
       if (this.sfbWindow.isMinimized()) {
         this.sfbWindow.restore();
@@ -229,21 +241,25 @@ class WinWindow extends Window {
         this.sfbWindow.bringToTop();
       }, 0);
     });
+
     this.sfbWindow.on('hide', () => {
       this.rcWindow.hide();
     });
     this.sfbWindow.on('minimize-start', () => {
       this.rcWindow.minimize();
     });
-    // move
+
     this.sfbWindow.on('move', (rect) => {
-      // sync position
       this.rcWindow.setPosition(rect.right, rect.top);
     });
+
     this.sfbWindow.on('inited', () => {
       this.sfbWindow.show();
       const rect = this.sfbWindow.getRect();
       this.rcWindow.setPosition(rect.right, rect.top);
+    });
+    this.sfbWindow.on('losed', () => {
+      this.sfbWindow.hide();
     });
   }
 

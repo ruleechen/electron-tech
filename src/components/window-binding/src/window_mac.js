@@ -27,7 +27,7 @@ class SfbWindow extends EventEmitter {
   }
 
   static monitorWindowId(changed) {
-    setTimeout(() => {
+    setImmediate(() => {
       let windowId = SfbWindow.loadWindowId();
       changed(windowId);
       const cb = () => {
@@ -40,7 +40,7 @@ class SfbWindow extends EventEmitter {
       setInterval(cb, 512);
       // Addon.setWinEventHookObjectCreate(cb);
       // Addon.setWinEventHookObjectDestroy(cb);
-    }, 0);
+    });
   }
 
   show() {

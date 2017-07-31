@@ -13,10 +13,45 @@ const WindowBinding = require('./src/components/window-binding');
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let aboutWindow;
+
 let mainWindowBinding;
 let appTray;
 
-const createWindow = () => {
+const createAboutWindow = () => {
+  if (aboutWindow) {
+    aboutWindow.close();
+  }
+
+  aboutWindow = new BrowserWindow({
+    width: 300,
+    height: 200,
+    show: true,
+    frame: true,
+    movable: true,
+    closable: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+  });
+
+  aboutWindow.setMenu(null);
+  aboutWindow.setAlwaysOnTop(true);
+
+  aboutWindow.loadURL(url.format({
+    pathname: path.join(__dirname, 'src/view/about/index.html'),
+    protocol: 'file:',
+    slashes: true,
+  }));
+
+  aboutWindow.on('closed', () => {
+    aboutWindow = null;
+  });
+};
+
+const createMainWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 300,
@@ -80,7 +115,7 @@ const createWindow = () => {
     {
       label: 'About',
       click() {
-        console.log('About Clicked');
+        createAboutWindow();
       },
     },
     {
@@ -104,7 +139,7 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-  createWindow();
+  createMainWindow();
 });
 
 // Quit when all windows are closed.
@@ -120,7 +155,7 @@ app.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) {
-    createWindow();
+    createMainWindow();
   }
 });
 

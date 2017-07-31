@@ -52,6 +52,26 @@ namespace window_win {
     args.GetReturnValue().Set(Nan::New(strHwnd).ToLocalChecked());
   }
 
+  void out_allowSetForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    // query
+    auto hwnd = hwndMap[strHwnd];
+    DWORD processId;
+    GetWindowThreadProcessId(hwnd, &processId);
+    // apply
+    BOOL setted;
+    if (processId != 0) {
+      setted = AllowSetForegroundWindow(processId);
+    } else {
+      setted = AllowSetForegroundWindow(ASFW_ANY); // all processes
+    }
+    // return
+    auto ret = (setted == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
+  }
+
   void out_bringWindowToTop(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
@@ -317,6 +337,7 @@ namespace window_win {
   void Init(v8::Local<v8::Object> exports) {
     // exports
     exports->Set(Nan::New("findWindowHwnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowHwnd)->GetFunction());
+    exports->Set(Nan::New("allowSetForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_allowSetForegroundWindow)->GetFunction());
     exports->Set(Nan::New("bringWindowToTop").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_bringWindowToTop)->GetFunction());
     exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());

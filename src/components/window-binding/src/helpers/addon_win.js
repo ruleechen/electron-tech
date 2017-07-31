@@ -20,6 +20,10 @@ class AddonClass {
     return addon.findWindowHwnd(className, windowName);
   }
 
+  static allowSetForegroundWindow(hwnd) {
+    return addon.allowSetForegroundWindow(hwnd);
+  }
+
   static bringWindowToTop(hwnd) {
     return addon.bringWindowToTop(hwnd);
   }

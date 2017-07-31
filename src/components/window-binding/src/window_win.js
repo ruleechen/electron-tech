@@ -143,6 +143,7 @@ class RcWindow extends EventEmitter {
       throw new Error('"windowId" notfound');
     }
     this.inited = (new Date()).getTime();
+    Addon.allowSetForegroundWindow(this.windowId);
   }
 
   static loadWindowId() {

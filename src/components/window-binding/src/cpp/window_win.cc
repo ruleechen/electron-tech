@@ -76,6 +76,25 @@ namespace window_win {
     args.GetReturnValue().Set(Nan::New(ret));
   }
 
+  void out_setAlwaysOnTop(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    auto hwnd = hwndMap[strHwnd];
+    // argument 1
+    bool onTop = args[1]->BooleanValue();
+    // apply
+    BOOL setted;
+    if (onTop) {
+      setted = SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    } else {
+      setted = SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    }
+    // return
+    auto ret = (setted == TRUE);
+    args.GetReturnValue().Set(Nan::New(ret));
+  }
+
   void out_bringWindowToTop(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
@@ -342,6 +361,7 @@ namespace window_win {
     // exports
     exports->Set(Nan::New("findWindowHwnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowHwnd)->GetFunction());
     exports->Set(Nan::New("allowSetForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_allowSetForegroundWindow)->GetFunction());
+    exports->Set(Nan::New("setAlwaysOnTop").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setAlwaysOnTop)->GetFunction());
     exports->Set(Nan::New("bringWindowToTop").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_bringWindowToTop)->GetFunction());
     exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());

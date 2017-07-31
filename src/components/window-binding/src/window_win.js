@@ -165,9 +165,10 @@ class RcWindow extends EventEmitter {
     return this.browserWindow.isVisible();
   }
 
-  bringToTop() {
-    if (!this.windowId) { return; }
-    Addon.setForegroundWindow(this.windowId); // TODO: this is not take effect
+  bringToTop(focus) {
+    this.browserWindow.setAlwaysOnTop(true);
+    if (focus) { this.browserWindow.focus(); }
+    this.browserWindow.setAlwaysOnTop(false);
   }
 
   isMinimized() {
@@ -241,13 +242,14 @@ class WinWindow extends Window {
     this.rcWindow.on('foreground', () => {
       if (this.sfbWindow.isMinimized()) {
         this.sfbWindow.restore();
-      } else if (!this.sfbWindow.isVisible()) {
-        this.sfbWindow.show();
+        return;
       }
-      setTimeout(() => {
-        this.sfbWindow.bringToTop();
-        this.rcWindow.bringToTop();
-      }, 0);
+      if (!this.sfbWindow.isVisible()) {
+        this.sfbWindow.show();
+        return;
+      }
+      this.sfbWindow.bringToTop();
+      this.rcWindow.bringToTop(true);
     });
     this.sfbWindow.on('foreground', () => {
       if (this.rcWindow.isMinimized()) {
@@ -258,10 +260,8 @@ class WinWindow extends Window {
         this.rcWindow.show();
         return;
       }
-      setTimeout(() => {
-        this.rcWindow.bringToTop();
-        this.sfbWindow.bringToTop();
-      }, 0);
+      this.rcWindow.bringToTop(false);
+      this.sfbWindow.bringToTop();
     });
 
     this.sfbWindow.on('show', () => {

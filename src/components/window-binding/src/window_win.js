@@ -268,6 +268,9 @@ class WinWindow extends Window {
       this.rcWindow.show();
     });
     this.sfbWindow.on('hide', () => {
+      // right after sfb is hidden --> rc become foreground --> show sfb again
+      // so here we need the freezeForeground before hide sfb
+      freezeForeground();
       this.rcWindow.hide();
     });
 

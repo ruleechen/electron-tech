@@ -24,8 +24,8 @@ const createAboutWindow = () => {
   }
 
   aboutWindow = new BrowserWindow({
-    width: 300,
-    height: 200,
+    width: 400,
+    height: 250,
     show: true,
     frame: true,
     movable: true,

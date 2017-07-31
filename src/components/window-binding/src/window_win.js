@@ -143,7 +143,6 @@ class RcWindow extends EventEmitter {
       throw new Error('"windowId" notfound');
     }
     this.inited = (new Date()).getTime();
-    Addon.allowSetForegroundWindow(this.windowId);
   }
 
   static loadWindowId() {
@@ -252,6 +251,12 @@ class WinWindow extends Window {
       this.rcWindow.bringToTop(true);
     });
     this.sfbWindow.on('foreground', () => {
+      if (!this.setForegroundWindowAllowed) {
+        // The calling process must already be able to set the foreground window
+        // So here we use sfb process to enable the rc electron process
+        Addon.allowSetForegroundWindow(this.rcWindow.windowId);
+        this.setForegroundWindowAllowed = true;
+      }
       if (this.rcWindow.isMinimized()) {
         this.rcWindow.restore();
         return;

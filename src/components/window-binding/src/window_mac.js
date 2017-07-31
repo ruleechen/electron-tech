@@ -10,11 +10,14 @@ const freezeForeground = require('./helpers/freeze').create({ timeout: 200 });
 class SfbWindow extends EventEmitter {
   constructor() {
     super();
+    this.inited = 0;
     SfbWindow.monitorWindowId((windowId) => {
       this.windowId = windowId;
       if (windowId) {
+        this.inited = (new Date()).getTime();
         this.emit('inited');
       } else {
+        this.inited = 0;
         this.emit('losed');
       }
     });
@@ -115,6 +118,7 @@ class RcWindow extends EventEmitter {
     if (!this.windowId) {
       throw new Error('"windowId" notfound');
     }
+    this.inited = (new Date()).getTime();
   }
 
   static loadWindowId() {
@@ -238,6 +242,8 @@ class MacWindow extends Window {
 
     this.sfbWindow.on('inited', () => {
       this.sfbWindow.show();
+      this.sfbWindow.bringToTop();
+      this.rcWindow.show();
       const rect = this.sfbWindow.getRect();
       this.rcWindow.setPosition(rect.right, rect.top);
     });

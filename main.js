@@ -43,7 +43,6 @@ const createWindow = () => {
   // mainWindow.webContents.openDevTools()
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
     mainWindowBinding = new WindowBinding.Core({
       browserWindow: mainWindow,
     });

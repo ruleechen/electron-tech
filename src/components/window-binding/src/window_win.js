@@ -10,11 +10,14 @@ const freezeForeground = require('./helpers/freeze').create({ timeout: 200 });
 class SfbWindow extends EventEmitter {
   constructor() {
     super();
+    this.inited = 0;
     SfbWindow.monitorWindowId((windowId) => {
       this.windowId = windowId;
       if (windowId) {
+        this.inited = (new Date()).getTime();
         this.emit('inited');
       } else {
+        this.inited = 0;
         this.emit('losed');
       }
     });
@@ -90,6 +93,11 @@ class SfbWindow extends EventEmitter {
   }
 
   hook() {
+    Addon.setWinEventHookObjectShow((windowId) => {
+      if (windowId === this.windowId) {
+        this.emit('show');
+      }
+    });
     Addon.setWinEventHookObjectHide((windowId) => {
       if (windowId === this.windowId) {
         this.emit('hide');
@@ -98,6 +106,11 @@ class SfbWindow extends EventEmitter {
     Addon.setWinEventHookMinimizeStart((windowId) => {
       if (windowId === this.windowId) {
         this.emit('minimize-start');
+      }
+    });
+    Addon.setWinEventHookMinimizeEnd((windowId) => {
+      if (windowId === this.windowId) {
+        this.emit('restore-start');
       }
     });
     Addon.setWinEventHookLocationChange((windowId) => {
@@ -129,6 +142,7 @@ class RcWindow extends EventEmitter {
     if (!this.windowId) {
       throw new Error('"windowId" notfound');
     }
+    this.inited = (new Date()).getTime();
   }
 
   static loadWindowId() {
@@ -152,7 +166,7 @@ class RcWindow extends EventEmitter {
 
   bringToTop() {
     if (!this.windowId) { return; }
-    Addon.setForegroundWindow(this.windowId);
+    Addon.setForegroundWindow(this.windowId); // TODO: this is not take effect
   }
 
   isMinimized() {
@@ -249,11 +263,18 @@ class WinWindow extends Window {
       }, 0);
     });
 
+    this.sfbWindow.on('show', () => {
+      this.rcWindow.show();
+    });
     this.sfbWindow.on('hide', () => {
       this.rcWindow.hide();
     });
+
     this.sfbWindow.on('minimize-start', () => {
       this.rcWindow.minimize();
+    });
+    this.sfbWindow.on('restore-start', () => {
+      this.rcWindow.restore();
     });
 
     this.sfbWindow.on('move', (rect) => {
@@ -262,6 +283,8 @@ class WinWindow extends Window {
 
     this.sfbWindow.on('inited', () => {
       this.sfbWindow.show();
+      this.sfbWindow.bringToTop();
+      this.rcWindow.show();
       const rect = this.sfbWindow.getRect();
       this.rcWindow.setPosition(rect.right, rect.top);
     });

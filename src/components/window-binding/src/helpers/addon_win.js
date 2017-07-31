@@ -2,7 +2,18 @@
 * windows addon
 */
 
+const EventEmitter = require('events');
 const addon = require('bindings')('wb.node');
+
+const emitter = new EventEmitter();
+const setWinEventHook = (key, callback) => {
+  if (!emitter.listeners(key).length) {
+    addon[key]((windowId) => {
+      emitter.emit(key, windowId);
+    });
+  }
+  emitter.on(key, callback);
+}
 
 class AddonClass {
   static findWindowHwnd({ className, windowName }) {
@@ -52,39 +63,40 @@ class AddonClass {
   }
 
   static unhookWinEvents() {
+    emitter.removeAllListeners();
     return addon.unhookWinEvents();
   }
 
   static setWinEventHookObjectCreate(callback) {
-    return addon.setWinEventHookObjectCreate(callback);
+    setWinEventHook('setWinEventHookObjectCreate', callback);
   }
 
   static setWinEventHookObjectDestroy(callback) {
-    return addon.setWinEventHookObjectDestroy(callback);
+    setWinEventHook('setWinEventHookObjectDestroy', callback);
   }
 
   static setWinEventHookObjectHide(callback) {
-    return addon.setWinEventHookObjectHide(callback);
+    setWinEventHook('setWinEventHookObjectHide', callback);
   }
 
   static setWinEventHookObjectShow(callback) {
-    return addon.setWinEventHookObjectShow(callback);
+    setWinEventHook('setWinEventHookObjectShow', callback);
   }
 
   static setWinEventHookLocationChange(callback) {
-    return addon.setWinEventHookLocationChange(callback);
+    setWinEventHook('setWinEventHookLocationChange', callback);
   }
 
   static setWinEventHookMinimizeStart(callback) {
-    return addon.setWinEventHookMinimizeStart(callback);
+    setWinEventHook('setWinEventHookMinimizeStart', callback);
   }
 
   static setWinEventHookMinimizeEnd(callback) {
-    return addon.setWinEventHookMinimizeEnd(callback);
+    setWinEventHook('setWinEventHookMinimizeEnd', callback);
   }
 
   static setWinEventHookForeground(callback) {
-    return addon.setWinEventHookForeground(callback);
+    setWinEventHook('setWinEventHookForeground', callback);
   }
 
   static helloWorld() {

@@ -2,7 +2,18 @@
 * macOS addon
 */
 
+const EventEmitter = require('events');
 const addon = require('bindings')('wb.node');
+
+const emitter = new EventEmitter();
+const setWinEventHook = (key, callback) => {
+  if (!emitter.listeners(key).length) {
+    addon[key]((windowId) => {
+      emitter.emit(key, windowId);
+    });
+  }
+  emitter.on(key, callback);
+}
 
 class AddonClass {
   static findWindowId({ ownerName, windowName }) {
@@ -29,15 +40,16 @@ class AddonClass {
   }
 
   static unhookWinEvents() {
+    emitter.removeAllListeners();
     return addon.unhookWinEvents();
   }
 
   static setWinEventHookForeground(callback) {
-    return addon.setWinEventHookForeground(callback);
+    setWinEventHook('setWinEventHookForeground', callback);
   }
 
   static setWinEventHookLocationChange(callback) {
-    return addon.setWinEventHookLocationChange(callback);
+    setWinEventHook('setWinEventHookLocationChange', callback);
   }
 
   static helloWorld() {

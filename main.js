@@ -105,13 +105,14 @@ const createMainWindow = () => {
     './src/resources/tray-icon/app-win.ico' :
     './src/resources/tray-icon/app-mac.png';
   appTray = new electron.Tray(iconPath);
-  const contextMenu = electron.Menu.buildFromTemplate([
-    {
-      label: 'Show',
-      click() {
-        mainWindow.show();
-      },
-    },
+
+  appTray.setToolTip('RingCentral for Skype for Business');
+
+  appTray.on('double-click', () => {
+    mainWindow.show();
+  });
+
+  appTray.setContextMenu(electron.Menu.buildFromTemplate([
     {
       label: 'About',
       click() {
@@ -119,12 +120,17 @@ const createMainWindow = () => {
       },
     },
     {
+      label: 'Show',
+      click() {
+        mainWindow.show();
+      },
+    },
+    {
       label: 'Quit',
       role: 'quit',
     },
-  ]);
-  appTray.setContextMenu(contextMenu);
-  appTray.setToolTip('RingCentral for Skype for Business');
+  ]));
+
   if (WindowBinding.isMacOS) {
     mainWindow.on('show', () => {
       appTray.setHighlightMode('always');

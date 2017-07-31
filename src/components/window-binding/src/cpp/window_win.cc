@@ -197,6 +197,7 @@ namespace window_win {
     callback.Call(argc, argv);
   }
 
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/dd318066(v=vs.85).aspx
   void WrapSetWinEventHook(DWORD eventType, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
     if (hookMap.count(eventType) > 0) {
       return;

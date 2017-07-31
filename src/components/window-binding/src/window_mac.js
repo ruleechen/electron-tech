@@ -5,6 +5,7 @@
 const EventEmitter = require('events');
 const Window = require('./window');
 const Addon = require('./helpers/addon_mac');
+const freezeForeground = require('./helpers/freeze').create({ timeout: 200 });
 
 class SfbWindow extends EventEmitter {
   constructor() {
@@ -95,10 +96,8 @@ class SfbWindow extends EventEmitter {
       }
     });
     Addon.setWinEventHookForeground((windowId) => {
-      if (windowId === this.sfbWindowId) {
-        this.emit('foreground-in');
-      } else {
-        this.emit('foreground-out');
+      if (!freezeForeground()) {
+        this.emit('foreground', windowId);
       }
     });
   }
@@ -137,8 +136,7 @@ class RcWindow extends EventEmitter {
   }
 
   bringToTop() {
-    // if (!this.rcHwnd) { return; }
-    // Addon.setForegroundWindow(this.rcHwnd);
+    this.browserWindow.focus();
   }
 
   isMinimized() {
@@ -175,7 +173,9 @@ class RcWindow extends EventEmitter {
       this.emit('move', rect);
     });
     this.browserWindow.on('focus', this.focusHandler = () => {
-      this.emit('foreground');
+      if (!freezeForeground()) {
+        this.emit('foreground');
+      }
     });
   }
 
@@ -199,50 +199,38 @@ class MacWindow extends Window {
     this.rcWindow = new RcWindow({ browserWindow });
     this.sfbWindow = new SfbWindow();
 
-    this.rcWindow.on('foreground', () => {
-      if (this.sfbWindow.isMinimized()) {
-        this.sfbWindow.restore();
-        return;
+    // this.rcWindow.on('foreground', () => {
+    //   if (this.sfbWindow.isMinimized()) {
+    //     this.sfbWindow.restore();
+    //     return;
+    //   }
+    //   if (!this.sfbWindow.isVisible()) {
+    //     this.sfbWindow.show();
+    //     return;
+    //   }
+    //   setTimeout(() => {
+    //     this.sfbWindow.bringToTop();
+    //     this.rcWindow.bringToTop();
+    //   }, 0);
+    // });
+    this.sfbWindow.on('foreground', (windowId) => {
+      if (windowId === this.sfbWindow.sfbWindowId) {
+        if (this.rcWindow.isMinimized()) {
+          this.rcWindow.restore();
+        } else if (!this.rcWindow.isVisible()) {
+          this.rcWindow.show();
+        }
+      } else if (windowId !== this.rcWindow.rcWindowId) {
+        this.rcWindow.hide();
       }
-      if (!this.sfbWindow.isVisible()) {
-        this.sfbWindow.show();
-        return;
-      }
-      setTimeout(() => {
-        this.sfbWindow.bringToTop();
-        this.rcWindow.bringToTop();
-      }, 0);
-    });
-    this.sfbWindow.on('foreground-in', () => {
-      if (this.rcWindow.isMinimized()) {
-        this.rcWindow.restore();
-        return;
-      }
-      if (!this.rcWindow.isVisible()) {
-        this.rcWindow.show();
-        return;
-      }
-      setTimeout(() => {
-        this.rcWindow.bringToTop();
-        this.sfbWindow.bringToTop();
-      }, 0);
-    });
-    this.sfbWindow.on('foreground-out', () => {
-      if (this.rcWindow.isMinimized()) {
-        return;
-      }
-      if (!this.rcWindow.isVisible()) {
-        return;
-      }
-      this.rcWindow.hide();
     });
 
-    this.sfbWindow.on('hide', () => {
-      this.rcWindow.hide();
-    });
-    this.sfbWindow.on('minimize-start', () => {
-      this.rcWindow.minimize();
-    });
+    // this.sfbWindow.on('hide', () => {
+    //   this.rcWindow.hide();
+    // });
+    // this.sfbWindow.on('minimize-start', () => {
+    //   this.rcWindow.minimize();
+    // });
 
     this.sfbWindow.on('move', (rect) => {
       this.rcWindow.setPosition(rect.right, rect.top);

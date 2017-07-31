@@ -210,7 +210,7 @@ namespace window_mac {
         Nan::Callback foregroundCallbackLocalWrap(foregroundCallbackLocal);
         foregroundCallbackLocalWrap.Call(foregroundArgc, foregroundArgv);
       }
-      std::cout << "Process Changed" << std::endl;
+      std::cout << "Process Changed: " << eventPid << std::endl;
     }
 
     // https://developer.apple.com/documentation/coregraphics/cgeventflags?language=objc

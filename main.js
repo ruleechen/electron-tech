@@ -22,14 +22,14 @@ const createWindow = () => {
     width: 300,
     height: 600,
     show: false,
-    frame: true,
+    frame: false,
     movable: true,
     closable: true,
     resizable: false,
-    minimizable: true,
+    minimizable: false,
     maximizable: false,
     fullscreenable: false,
-    skipTaskbar: false,
+    skipTaskbar: true,
   });
 
   // and load the index.html of the app.
@@ -69,6 +69,12 @@ const createWindow = () => {
     './src/resources/tray-icon/app-mac.png';
   appTray = new electron.Tray(iconPath);
   const contextMenu = electron.Menu.buildFromTemplate([
+    {
+      label: 'Show',
+      click() {
+        mainWindow.show();
+      },
+    },
     {
       label: 'About',
       click() {

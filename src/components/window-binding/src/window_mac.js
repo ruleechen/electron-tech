@@ -11,7 +11,7 @@ class SfbWindow extends EventEmitter {
   constructor() {
     super();
     SfbWindow.monitorWindowId((windowId) => {
-      this.sfbWindowId = windowId;
+      this.windowId = windowId;
       if (windowId) {
         this.emit('inited');
       } else {
@@ -44,53 +44,53 @@ class SfbWindow extends EventEmitter {
   }
 
   show() {
-    // if (!this.sfbHwnd) { return; }
-    // Addon.showWindow(this.sfbHwnd);
+    // if (!this.windowId) { return; }
+    // Addon.showWindow(this.windowId);
   }
 
   hide() {
-    // if (!this.sfbHwnd) { return; }
-    // Addon.hideWindow(this.sfbHwnd);
+    // if (!this.windowId) { return; }
+    // Addon.hideWindow(this.windowId);
   }
 
   isVisible() {
-    // if (!this.sfbHwnd) { return false; }
-    // return Addon.isWindowVisible(this.sfbHwnd);
+    // if (!this.windowId) { return false; }
+    // return Addon.isWindowVisible(this.windowId);
   }
 
   bringToTop() {
-    // if (!this.sfbHwnd) { return; }
-    // Addon.setForegroundWindow(this.sfbHwnd);
+    // if (!this.windowId) { return; }
+    // Addon.setForegroundWindow(this.windowId);
   }
 
   isMinimized() {
-    if (!this.sfbWindowId) { return false; }
-    return Addon.isWindowMinimized(this.sfbWindowId);
+    if (!this.windowId) { return false; }
+    return Addon.isWindowMinimized(this.windowId);
   }
 
   minimize() {
-    // if (!this.sfbHwnd) { return; }
-    // Addon.minimizeWindow(this.sfbHwnd);
+    // if (!this.windowId) { return; }
+    // Addon.minimizeWindow(this.windowId);
   }
 
   restore() {
-    // if (!this.sfbHwnd) { return; }
-    // Addon.restoreWindow(this.sfbHwnd);
+    // if (!this.windowId) { return; }
+    // Addon.restoreWindow(this.windowId);
   }
 
   setPosition(x, y) {
-    // if (!this.sfbHwnd) { return; }
+    // if (!this.windowId) { return; }
     // Addon.setPosition ?
   }
 
   getRect() {
-    if (!this.sfbWindowId) { return null; }
-    return Addon.getWindowRect(this.sfbWindowId);
+    if (!this.windowId) { return null; }
+    return Addon.getWindowRect(this.windowId);
   }
 
   hook() {
     Addon.setWinEventHookLocationChange((windowId) => {
-      if (windowId === this.sfbWindowId) {
+      if (windowId === this.windowId) {
         const rect = this.getRect();
         this.emit('move', rect);
       }
@@ -111,9 +111,9 @@ class RcWindow extends EventEmitter {
   constructor({ browserWindow }) {
     super();
     this.browserWindow = browserWindow;
-    this.rcWindowId = RcWindow.loadWindowId();
-    if (!this.rcWindowId) {
-      throw new Error('"rcWindowId" notfound');
+    this.windowId = RcWindow.loadWindowId();
+    if (!this.windowId) {
+      throw new Error('"windowId" notfound');
     }
   }
 
@@ -214,13 +214,13 @@ class MacWindow extends Window {
     //   }, 0);
     // });
     this.sfbWindow.on('foreground', (windowId) => {
-      if (windowId === this.sfbWindow.sfbWindowId) {
+      if (windowId === this.sfbWindow.windowId) {
         if (this.rcWindow.isMinimized()) {
           this.rcWindow.restore();
         } else if (!this.rcWindow.isVisible()) {
           this.rcWindow.show();
         }
-      } else if (windowId !== this.rcWindow.rcWindowId) {
+      } else if (windowId !== this.rcWindow.windowId) {
         this.rcWindow.hide();
       }
     });

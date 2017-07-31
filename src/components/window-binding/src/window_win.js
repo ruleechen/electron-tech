@@ -10,9 +10,9 @@ const freezeForeground = require('./helpers/freeze').create({ timeout: 200 });
 class SfbWindow extends EventEmitter {
   constructor() {
     super();
-    SfbWindow.monitorHwnd((hwnd) => {
-      this.sfbHwnd = hwnd;
-      if (hwnd) {
+    SfbWindow.monitorWindowId((windowId) => {
+      this.windowId = windowId;
+      if (windowId) {
         this.emit('inited');
       } else {
         this.emit('losed');
@@ -20,22 +20,22 @@ class SfbWindow extends EventEmitter {
     });
   }
 
-  static loadHwnd() {
+  static loadWindowId() {
     return Addon.findWindowHwnd({
       className: 'CommunicatorMainWindowClass',
       windowName: 'Skype for Business ',
     });
   }
 
-  static monitorHwnd(changed) {
+  static monitorWindowId(changed) {
     setTimeout(() => {
-      let hwnd = SfbWindow.loadHwnd();
-      changed(hwnd);
+      let windowId = SfbWindow.loadWindowId();
+      changed(windowId);
       const cb = () => {
-        const ret = SfbWindow.loadHwnd();
-        if (ret !== hwnd) {
-          hwnd = ret;
-          changed(hwnd);
+        const ret = SfbWindow.loadWindowId();
+        if (ret !== windowId) {
+          windowId = ret;
+          changed(windowId);
         }
       };
       setInterval(cb, 512);
@@ -45,69 +45,69 @@ class SfbWindow extends EventEmitter {
   }
 
   show() {
-    if (!this.sfbHwnd) { return; }
-    Addon.showWindow(this.sfbHwnd);
+    if (!this.windowId) { return; }
+    Addon.showWindow(this.windowId);
   }
 
   hide() {
-    if (!this.sfbHwnd) { return; }
-    Addon.hideWindow(this.sfbHwnd);
+    if (!this.windowId) { return; }
+    Addon.hideWindow(this.windowId);
   }
 
   isVisible() {
-    if (!this.sfbHwnd) { return false; }
-    return Addon.isWindowVisible(this.sfbHwnd);
+    if (!this.windowId) { return false; }
+    return Addon.isWindowVisible(this.windowId);
   }
 
   bringToTop() {
-    if (!this.sfbHwnd) { return; }
-    Addon.setForegroundWindow(this.sfbHwnd);
+    if (!this.windowId) { return; }
+    Addon.setForegroundWindow(this.windowId);
   }
 
   isMinimized() {
-    if (!this.sfbHwnd) { return false; }
-    return Addon.isWindowMinimized(this.sfbHwnd);
+    if (!this.windowId) { return false; }
+    return Addon.isWindowMinimized(this.windowId);
   }
 
   minimize() {
-    if (!this.sfbHwnd) { return; }
-    Addon.minimizeWindow(this.sfbHwnd);
+    if (!this.windowId) { return; }
+    Addon.minimizeWindow(this.windowId);
   }
 
   restore() {
-    if (!this.sfbHwnd) { return; }
-    Addon.restoreWindow(this.sfbHwnd);
+    if (!this.windowId) { return; }
+    Addon.restoreWindow(this.windowId);
   }
 
   setPosition(x, y) {
-    // if (!this.sfbHwnd) { return; }
+    // if (!this.windowId) { return; }
     // Addon.setPosition ?
   }
 
   getRect() {
-    if (!this.sfbHwnd) { return null; }
-    return Addon.getWindowRect(this.sfbHwnd);
+    if (!this.windowId) { return null; }
+    return Addon.getWindowRect(this.windowId);
   }
 
   hook() {
-    Addon.setWinEventHookObjectHide((hwnd) => {
-      if (hwnd === this.sfbHwnd) {
+    Addon.setWinEventHookObjectHide((windowId) => {
+      if (windowId === this.windowId) {
         this.emit('hide');
       }
     });
-    Addon.setWinEventHookMinimizeStart((hwnd) => {
-      if (hwnd === this.sfbHwnd) {
+    Addon.setWinEventHookMinimizeStart((windowId) => {
+      if (windowId === this.windowId) {
         this.emit('minimize-start');
       }
     });
-    Addon.setWinEventHookLocationChange((hwnd) => {
-      if (hwnd === this.sfbHwnd) {
+    Addon.setWinEventHookLocationChange((windowId) => {
+      if (windowId === this.windowId) {
         const rect = this.getRect();
         this.emit('move', rect);
       }
     });
-    Addon.setWinEventHookForeground((hwnd) => {
-      if (hwnd === this.sfbHwnd) {
+    Addon.setWinEventHookForeground((windowId) => {
+      if (windowId === this.windowId) {
         if (!freezeForeground()) {
           this.emit('foreground');
         }
@@ -124,13 +124,13 @@ class RcWindow extends EventEmitter {
   constructor({ browserWindow }) {
     super();
     this.browserWindow = browserWindow;
-    this.rcHwnd = RcWindow.loadHwnd();
-    if (!this.rcHwnd) {
-      throw new Error('"rcHwnd" notfound');
+    this.windowId = RcWindow.loadWindowId();
+    if (!this.windowId) {
+      throw new Error('"windowId" notfound');
     }
   }
 
-  static loadHwnd() {
+  static loadWindowId() {
     return Addon.findWindowHwnd({
       className: 'Chrome_WidgetWin_1',
       windowName: 'RingCentral for Skype for Business',
@@ -150,8 +150,8 @@ class RcWindow extends EventEmitter {
   }
 
   bringToTop() {
-    if (!this.rcHwnd) { return; }
-    Addon.setForegroundWindow(this.rcHwnd);
+    if (!this.windowId) { return; }
+    Addon.setForegroundWindow(this.windowId);
   }
 
   isMinimized() {

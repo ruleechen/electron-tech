@@ -21,7 +21,7 @@ class AddonClass {
   }
 
   static allowSetForegroundWindow(hwnd) {
-    return addon.allowSetForegroundWindow(hwnd);
+    return addon.allowSetForegroundWindow(hwnd || '-1');
   }
 
   static bringWindowToTop(hwnd) {

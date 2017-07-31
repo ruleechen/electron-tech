@@ -57,12 +57,16 @@ namespace window_win {
     v8::String::Utf8Value arg0(args[0]);
     auto strHwnd = std::string(*arg0);
     // query
-    auto hwnd = hwndMap[strHwnd];
+    bool queried = false;
     DWORD processId;
-    GetWindowThreadProcessId(hwnd, &processId);
+    auto hwnd = hwndMap[strHwnd];
+    if (hwnd) {
+      GetWindowThreadProcessId(hwnd, &processId);
+      queried = true;
+    }
     // apply
     BOOL setted;
-    if (processId != 0) {
+    if (queried && processId) {
       setted = AllowSetForegroundWindow(processId);
     } else {
       setted = AllowSetForegroundWindow(ASFW_ANY); // all processes

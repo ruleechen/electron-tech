@@ -13,6 +13,7 @@ module.exports = {
       setTimeout(() => {
         frozen = false;
       }, timeout);
+      return false;
     };
   },
 };

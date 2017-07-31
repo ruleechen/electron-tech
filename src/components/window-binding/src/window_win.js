@@ -107,10 +107,11 @@ class SfbWindow extends EventEmitter {
       }
     });
     Addon.setWinEventHookForeground((windowId) => {
-      if (windowId === this.windowId) {
-        if (!freezeForeground()) {
-          this.emit('foreground');
-        }
+      if (windowId !== this.windowId) {
+        return;
+      }
+      if (!freezeForeground()) {
+        this.emit('foreground');
       }
     });
   }
@@ -192,6 +193,14 @@ class RcWindow extends EventEmitter {
         this.emit('foreground');
       }
     });
+    Addon.setWinEventHookForeground((windowId) => {
+      if (windowId !== this.windowId) {
+        return;
+      }
+      if (!freezeForeground()) {
+        this.emit('foreground');
+      }
+    });
   }
 
   unhook() {
@@ -217,11 +226,8 @@ class WinWindow extends Window {
     this.rcWindow.on('foreground', () => {
       if (this.sfbWindow.isMinimized()) {
         this.sfbWindow.restore();
-        return;
-      }
-      if (!this.sfbWindow.isVisible()) {
+      } else if (!this.sfbWindow.isVisible()) {
         this.sfbWindow.show();
-        return;
       }
       setTimeout(() => {
         this.sfbWindow.bringToTop();

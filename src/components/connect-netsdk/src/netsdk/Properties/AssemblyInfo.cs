@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Win32Hook")]
+[assembly: AssemblyTitle("netsdk")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Win32Hook")]
+[assembly: AssemblyProduct("netsdk")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("7de73199-7bbb-41ce-83c9-fdf66a1afd38")]
+[assembly: Guid("e8ab52c4-6f30-4d36-ae7a-765bf11752a7")]
 
 // Version information for an assembly consists of the following four values:
 //

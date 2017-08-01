@@ -2,14 +2,32 @@
 * index
 */
 
+const path = require('path');
 const edge = require('electron-edge');
 
-// const method = edge.func({
-//   assemblyFile: 'D:/rc/git/favorite/electron-quick-start/csharp/Win32Hook/Win32Hook/bin/Debug/Win32Hook.dll',
-//   typeName: 'Win32Hook.Startup',
-//   methodName: 'Invoke'
-// });
+const assemblyFile = path.resolve('./src/output/netsdk.dll');
 
-// method('pong', (error, result) => {
-//   event.sender.send('reply', result);
-// });
+const getPresenseFunc = edge.func({
+  assemblyFile,
+  typeName: 'Win32Hook.Startup',
+  methodName: 'Invoke',
+});
+
+module.exports = {
+
+  connect(userName, password) {
+
+  },
+
+  getPresense() {
+    return getPresenseFunc();
+  },
+
+  searchContacts(searchText) {
+
+  },
+
+  sendMessage(messagae) {
+
+  },
+};

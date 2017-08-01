@@ -295,4 +295,6 @@ __pycache__/
 *.xsd.cs
 
 
+/build
+/src/output
 node_modules

@@ -172,6 +172,12 @@ class RcWindow extends EventEmitter {
   }
 
   hook() {
+    this.browserWindow.on('show', this.showHandler = () => {
+      this.emit('show');
+    });
+    this.browserWindow.on('hide', this.hideHandler = () => {
+      this.emit('hide');
+    });
     this.browserWindow.on('move', this.moveHandler = () => {
       const rect = this.getRect();
       this.emit('move', rect);
@@ -181,9 +187,23 @@ class RcWindow extends EventEmitter {
         this.emit('foreground');
       }
     });
+    this.browserWindow.on('minimize', this.minimizeHandler = () => {
+      this.emit('minimize-start');
+    });
+    this.browserWindow.on('restore', this.restoreHandler = () => {
+      this.emit('restore-start');
+    });
   }
 
   unhook() {
+    if (this.showHandler) {
+      this.browserWindow.removeListener('show', this.showHandler);
+      delete this.showHandler;
+    }
+    if (this.hideHandler) {
+      this.browserWindow.removeListener('hide', this.hideHandler);
+      delete this.hideHandler;
+    }
     if (this.moveHandler) {
       this.browserWindow.removeListener('move', this.moveHandler);
       delete this.moveHandler;
@@ -191,6 +211,14 @@ class RcWindow extends EventEmitter {
     if (this.focusHandler) {
       this.browserWindow.removeListener('focus', this.focusHandler);
       delete this.focusHandler;
+    }
+    if (this.minimizeHandler) {
+      this.browserWindow.removeListener('minimize', this.minimizeHandler);
+      delete this.minimizeHandler;
+    }
+    if (this.restoreHandler) {
+      this.browserWindow.removeListener('restore', this.restoreHandler);
+      delete this.restoreHandler;
     }
   }
 }
@@ -203,20 +231,6 @@ class MacWindow extends Window {
     this.rcWindow = new RcWindow({ browserWindow });
     this.sfbWindow = new SfbWindow();
 
-    // this.rcWindow.on('foreground', () => {
-    //   if (this.sfbWindow.isMinimized()) {
-    //     this.sfbWindow.restore();
-    //     return;
-    //   }
-    //   if (!this.sfbWindow.isVisible()) {
-    //     this.sfbWindow.show();
-    //     return;
-    //   }
-    //   setTimeout(() => {
-    //     this.sfbWindow.bringToTop();
-    //     this.rcWindow.bringToTop();
-    //   }, 0);
-    // });
     this.sfbWindow.on('foreground', (windowId) => {
       if (windowId === this.sfbWindow.windowId) {
         if (this.rcWindow.isMinimized()) {
@@ -229,13 +243,6 @@ class MacWindow extends Window {
       }
     });
 
-    // this.sfbWindow.on('hide', () => {
-    //   this.rcWindow.hide();
-    // });
-    // this.sfbWindow.on('minimize-start', () => {
-    //   this.rcWindow.minimize();
-    // });
-
     this.sfbWindow.on('move', (rect) => {
       this.rcWindow.setPosition(rect.right, rect.top);
     });
@@ -247,6 +254,7 @@ class MacWindow extends Window {
       const rect = this.sfbWindow.getRect();
       this.rcWindow.setPosition(rect.right, rect.top);
     });
+
     this.sfbWindow.on('losed', () => {
       this.sfbWindow.hide();
     });

@@ -155,9 +155,9 @@ namespace window_win {
     auto strHwnd = std::string(*arg0);
     auto hwnd = hwndMap[strHwnd];
     // argument 1
-    auto x = args[1]->IntegerValue();
+    auto x = args[1]->Int32Value();
     // argument 2
-    auto y = args[2]->IntegerValue();
+    auto y = args[2]->Int32Value();
     // apply
     auto setted = SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE);
     // return

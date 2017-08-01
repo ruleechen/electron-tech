@@ -67,6 +67,8 @@ const createMainWindow = () => {
     skipTaskbar: true,
   });
 
+  mainWindow.setMenu(null);
+
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
     pathname: path.join(__dirname, 'src/view/index/index.html'),

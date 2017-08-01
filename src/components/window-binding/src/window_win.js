@@ -83,8 +83,8 @@ class SfbWindow extends EventEmitter {
   }
 
   setPosition(x, y) {
-    // if (!this.windowId) { return; }
-    // Addon.setPosition ?
+    if (!this.windowId) { return; }
+    Addon.setWindowPosition(this.windowId, x, y);
   }
 
   getRect() {

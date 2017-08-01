@@ -46,6 +46,10 @@ class AddonClass {
     return isEmpty ? null : rect;
   }
 
+  static setWindowPosition(hwnd, x, y) {
+    return addon.setWindowPosition(hwnd, x, y);
+  }
+
   static isWindowVisible(hwnd) {
     return addon.isWindowVisible(hwnd);
   }

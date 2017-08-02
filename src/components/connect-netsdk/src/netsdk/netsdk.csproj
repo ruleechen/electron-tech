@@ -50,9 +50,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
+    <Compile Include="ConversationService.cs" />
+    <Compile Include="Models\ContactModel.cs" />
+    <Compile Include="ContactService.cs" />
+    <Compile Include="_exports.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>XCOPY "$(TargetDir)*" "$(SolutionDir)output\" /y</PostBuildEvent>

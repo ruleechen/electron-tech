@@ -9,6 +9,7 @@ const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
 const url = require('url');
 const WindowBinding = require('./src/components/window-binding');
+const ConnectNetSdk = require('./src/components/connect-netsdk');
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.

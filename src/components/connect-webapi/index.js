@@ -4,14 +4,6 @@
 
 module.exports = {
 
-  connect(userName, password) {
-
-  },
-
-  getPresense() {
-
-  },
-
   searchContacts(searchText) {
 
   },

@@ -2,32 +2,35 @@
 * index
 */
 
-const path = require('path');
 const edge = require('electron-edge');
 
-const assemblyFile = path.resolve('./src/output/netsdk.dll');
+let sdkExports;
 
-const getPresenseFunc = edge.func({
-  assemblyFile,
-  typeName: 'Win32Hook.Startup',
-  methodName: 'Invoke',
-});
+const getExportFunc = methodName => (
+  edge.func({
+    assemblyFile: `${__dirname}/src/output/netsdk.dll`,
+    typeName: 'netsdk.exports',
+    methodName,
+  })
+);
+
+const getSdkExports = () => {
+  if (!sdkExports) {
+    sdkExports = {
+      searchContacts: getExportFunc('SearchContacts'),
+      sendMessage: getExportFunc('SendMessage'),
+    };
+  }
+  return sdkExports;
+};
 
 module.exports = {
 
-  connect(userName, password) {
-
-  },
-
-  getPresense() {
-    return getPresenseFunc();
-  },
-
   searchContacts(searchText) {
-
+    return getSdkExports().searchContacts(searchText);
   },
 
-  sendMessage(messagae) {
-
+  sendMessage(contact, messagae) {
+    return getSdkExports().sendMessage(contact, messagae);
   },
 };

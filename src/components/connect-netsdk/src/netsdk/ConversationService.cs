@@ -6,7 +6,11 @@ using System.Threading.Tasks;
 
 namespace netsdk
 {
-    public class Class1
+    public class ConversationService
     {
+        public bool SendMessage(string contact, string message)
+        {
+            return true;
+        }
     }
 }

@@ -5,12 +5,21 @@ namespace netsdk
     public class exports
     {
         private ContactService _contactService;
-        private ConversationService _conversationService;
-
-        public exports()
+        public ContactService ContactService
         {
-            _contactService = new ContactService();
-            _conversationService = new ConversationService();
+            get
+            {
+                return _contactService ?? (_contactService = new ContactService());
+            }
+        }
+
+        private ConversationService _conversationService;
+        public ConversationService ConversationService
+        {
+            get
+            {
+                return _conversationService ?? (_conversationService = new ConversationService());
+            }
         }
 
         public async Task<object> SearchContacts(dynamic args)
@@ -20,7 +29,7 @@ namespace netsdk
 
         public async Task<object> SendMessage(dynamic args)
         {
-            return _conversationService.SendMessage(args.contact, args.message);
+            return _conversationService.SendMessage(args.contactUri, args.message);
         }
     }
 }

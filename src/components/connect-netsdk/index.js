@@ -34,9 +34,9 @@ module.exports = {
     }, callback);
   },
 
-  sendMessage(contact, message, callback) {
+  sendMessage(contactUri, message, callback) {
     return getSdkExports().sendMessage({
-      contact,
+      contactUri,
       message,
     }, callback);
   },

@@ -2,6 +2,7 @@
 * index
 */
 
+// exports
 module.exports = {
 
   searchContacts(searchText) {

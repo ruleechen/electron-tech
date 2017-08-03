@@ -9,6 +9,7 @@ const isWindows = /^win/.test(process.platform);
 const isMacOS = !isWindows;
 const Core = isWindows ? WinWindow : MacWindow;
 
+// exports
 module.exports = {
   isWindows,
   isMacOS,

@@ -169,9 +169,12 @@ app.on('activate', () => {
 });
 
 ipc.on('async-message', (event, arg) => {
-  const addon = WindowBinding.Core.Addon;
-  addon.testCallback('rulee', (a, b, c) => {
-    event.sender.send('async-message-reply', `${a} ${b} ${c}`);
+  // const addon = WindowBinding.Core.Addon;
+  // addon.testCallback('rulee', (a, b, c) => {
+  //   event.sender.send('async-message-reply', `${a} ${b} ${c}`);
+  // });
+  ConnectNetSdk.searchContacts('demo', (err, res) => {
+    event.sender.send('async-message-reply', JSON.stringify(err || res));
   });
 });
 

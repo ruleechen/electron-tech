@@ -13,14 +13,14 @@ namespace netsdk
             _conversationService = new ConversationService();
         }
 
-        public async Task<object> SearchContacts(string searchText)
+        public async Task<object> SearchContacts(dynamic args)
         {
-            return _contactService.SearchContacts(searchText);
+            return _contactService.SearchContacts(args.searchText);
         }
 
-        public async Task<object> SendMessage(string contact, string message)
+        public async Task<object> SendMessage(dynamic args)
         {
-            return _conversationService.SendMessage(contact, message);
+            return _conversationService.SendMessage(args.contact, args.message);
         }
     }
 }

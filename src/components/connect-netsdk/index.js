@@ -2,13 +2,14 @@
 * index
 */
 
+const path = require('path');
 const edge = require('electron-edge');
 
 let sdkExports;
 
 const getExportFunc = methodName => (
   edge.func({
-    assemblyFile: `${__dirname}/output/netsdk.dll`,
+    assemblyFile: path.resolve(`${__dirname}/output/netsdk.dll`),
     typeName: 'netsdk.exports',
     methodName,
   })
@@ -24,13 +25,19 @@ const getSdkExports = () => {
   return sdkExports;
 };
 
+// exports
 module.exports = {
 
-  searchContacts(searchText) {
-    return getSdkExports().searchContacts(searchText);
+  searchContacts(searchText, callback) {
+    return getSdkExports().searchContacts({
+      searchText,
+    }, callback);
   },
 
-  sendMessage(contact, messagae) {
-    return getSdkExports().sendMessage(contact, messagae);
+  sendMessage(contact, message, callback) {
+    return getSdkExports().sendMessage({
+      contact,
+      message,
+    }, callback);
   },
 };

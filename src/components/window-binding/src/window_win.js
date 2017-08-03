@@ -266,6 +266,11 @@ class WinWindow extends Window {
     this.rcWindow = new RcWindow({ browserWindow });
     this.sfbWindow = new SfbWindow();
 
+    const syncWithSfbPosition = (sfbRect) => {
+      const rect = sfbRect || this.sfbWindow.getRect();
+      this.rcWindow.setPosition(rect.right, rect.top);
+    };
+
     this.sfbWindow.on('show', () => {
       this.rcWindow.show();
     });
@@ -276,6 +281,11 @@ class WinWindow extends Window {
       this.rcWindow.hide();
     });
 
+    this.rcWindow.on('minimize-start', () => {
+      // right after sfb is hidden --> rc become foreground --> show sfb again
+      // so here we need the freezeForeground before hide sfb
+      freezeForeground();
+    });
     this.sfbWindow.on('minimize-start', () => {
       this.rcWindow.minimize();
     });
@@ -284,6 +294,7 @@ class WinWindow extends Window {
     });
 
     this.rcWindow.on('foreground', () => {
+      syncWithSfbPosition();
       if (this.sfbWindow.isMinimized()) {
         this.sfbWindow.restore();
         return;
@@ -296,6 +307,7 @@ class WinWindow extends Window {
       this.rcWindow.bringToTop(true);
     });
     this.sfbWindow.on('foreground', () => {
+      syncWithSfbPosition();
       if (!this.setForegroundWindowAllowed) {
         // The calling process must already be able to set the foreground window
         // So here we use sfb process to enable the rc electron process
@@ -315,15 +327,14 @@ class WinWindow extends Window {
     });
 
     this.sfbWindow.on('move', (rect) => {
-      this.rcWindow.setPosition(rect.right, rect.top);
+      syncWithSfbPosition(rect);
     });
 
     this.sfbWindow.on('inited', () => {
       this.sfbWindow.show();
       this.sfbWindow.bringToTop();
       this.rcWindow.show();
-      const rect = this.sfbWindow.getRect();
-      this.rcWindow.setPosition(rect.right, rect.top);
+      syncWithSfbPosition();
     });
     this.sfbWindow.on('losed', () => {
       this.sfbWindow.hide();

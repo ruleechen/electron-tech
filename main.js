@@ -42,7 +42,7 @@ const createAboutWindow = () => {
   aboutWindow.setAlwaysOnTop(true);
 
   aboutWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'src/view/about/index.html'),
+    pathname: path.join(__dirname, 'src/views/about/index.html'),
     protocol: 'file:',
     slashes: true,
   }));
@@ -72,7 +72,7 @@ const createMainWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'src/view/index/index.html'),
+    pathname: path.join(__dirname, 'src/views/index/index.html'),
     protocol: 'file:',
     slashes: true,
   }));

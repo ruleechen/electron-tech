@@ -9,5 +9,7 @@
   "author": "RingCentral Integration Team",
   "license": "UNLICENSED",
   "dependencies": {
+    "ringcentral-integration": "^0.7.0-rc13",
+    "ringcentral-widget": "^0.4.0-rc26"
   }
 }

@@ -5,11 +5,12 @@
 // exports
 module.exports = {
 
-  searchContacts(searchText) {
-
+  registerEvents(stateChanged, callback) {
   },
 
-  sendMessage(messagae) {
+  searchContacts(searchText, callback) {
+  },
 
+  sendMessage(contactUri, message, callback) {
   },
 };

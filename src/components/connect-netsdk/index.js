@@ -18,6 +18,7 @@ const getExportFunc = methodName => (
 const getSdkExports = () => {
   if (!sdkExports) {
     sdkExports = {
+      registerEvents: getExportFunc('RegisterEvents'),
       searchContacts: getExportFunc('SearchContacts'),
       sendMessage: getExportFunc('SendMessage'),
     };
@@ -27,6 +28,12 @@ const getSdkExports = () => {
 
 // exports
 module.exports = {
+
+  registerEvents(stateChanged, callback) {
+    return getSdkExports().registerEvents({
+      stateChanged,
+    }, callback);
+  },
 
   searchContacts(searchText, callback) {
     return getSdkExports().searchContacts({

@@ -4,32 +4,30 @@ namespace netsdk
 {
     public class exports
     {
-        private ContactService _contactService;
-        public ContactService ContactService
-        {
-            get
-            {
-                return _contactService ?? (_contactService = new ContactService());
-            }
-        }
+        private static StateService StateService = new StateService();
+        private static ContactService ContactService = new ContactService();
+        private static ConversationService ConversationService = new ConversationService();
 
-        private ConversationService _conversationService;
-        public ConversationService ConversationService
+        public async Task<object> RegisterEvents(dynamic args)
         {
-            get
-            {
-                return _conversationService ?? (_conversationService = new ConversationService());
-            }
+            return StateService.RegisterEvents(
+                stateChanged: args.stateChanged
+            );
         }
 
         public async Task<object> SearchContacts(dynamic args)
         {
-            return _contactService.SearchContacts(args.searchText);
+            return ContactService.SearchContacts(
+                searchText: args.searchText
+            );
         }
 
         public async Task<object> SendMessage(dynamic args)
         {
-            return _conversationService.SendMessage(args.contactUri, args.message);
+            return ConversationService.SendMessage(
+                contactUri: args.contactUri,
+                message: args.message
+            );
         }
     }
 }

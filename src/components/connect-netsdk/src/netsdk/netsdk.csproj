@@ -54,6 +54,7 @@
     <Compile Include="Models\ContactModel.cs" />
     <Compile Include="ContactService.cs" />
     <Compile Include="Models\ContactPhone.cs" />
+    <Compile Include="StateService.cs" />
     <Compile Include="_exports.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

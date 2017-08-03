@@ -296,5 +296,5 @@ __pycache__/
 
 
 /build
-/src/output
+/output
 node_modules

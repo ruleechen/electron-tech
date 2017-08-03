@@ -8,7 +8,7 @@ let sdkExports;
 
 const getExportFunc = methodName => (
   edge.func({
-    assemblyFile: `${__dirname}/src/output/netsdk.dll`,
+    assemblyFile: `${__dirname}/output/netsdk.dll`,
     typeName: 'netsdk.exports',
     methodName,
   })

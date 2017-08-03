@@ -49,8 +49,11 @@ namespace netsdk
                     contactEndPoint.Type != Microsoft.Lync.Model.ContactEndpointType.VoiceMail)
                 {
                     var type = contactEndPoint.Type.ToString();
-                    var count = contactModel.PhoneNumbers.Count(x => x.Key.EndsWith(type));
-                    contactModel.PhoneNumbers.Add((++count) + type, contactEndPoint.DisplayName);
+                    contactModel.PhoneNumbers.Add(new ContactPhone
+                    {
+                        TypeName = type,
+                        PhoneNumber = contactEndPoint.DisplayName,
+                    });
                 }
             }
 

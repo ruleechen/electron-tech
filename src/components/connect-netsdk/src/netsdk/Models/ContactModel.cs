@@ -6,6 +6,6 @@ namespace netsdk.Models
     {
         public string Uri { get; set; }
 
-        public Dictionary<string, string> PhoneNumbers { get; } = new Dictionary<string, string>();
+        public List<ContactPhone> PhoneNumbers { get; } = new List<ContactPhone>();
     }
 }

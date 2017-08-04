@@ -30,10 +30,10 @@ const getSdkExports = () => {
 // exports
 module.exports = {
 
-  registerEvents({ appChanged, stateChanged, callback }) {
+  registerEvents({ appStateChanged, accountStateChanged, callback }) {
     getSdkExports().registerEvents({
-      appChanged,
-      stateChanged,
+      appStateChanged,
+      accountStateChanged,
     }, callback || (() => { }));
   },
 

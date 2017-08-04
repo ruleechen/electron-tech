@@ -2,8 +2,8 @@
 {
     public enum AppState
     {
-        Disconnected = 0,
+        Unavailable = 0,
 
-        Connected = 1,
+        Available = 1,
     }
 }

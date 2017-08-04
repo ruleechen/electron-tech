@@ -16,45 +16,52 @@ namespace netsdk.Services
 
         private void LyncProvider_OnChanged(object sender, LyncClient e)
         {
+            if (_appStateChangedHandler != null)
+            {
+                var appState = (e != null) ?
+                    AppState.Available.ToString() :
+                    AppState.Unavailable.ToString();
+
+                _appStateChangedHandler.Invoke(new
+                {
+                    AppState = appState,
+                });
+            }
+
             if (e != null)
             {
                 try { e.StateChanged -= StateChanged; } catch (Exception) { }
                 try { e.StateChanged += StateChanged; } catch (Exception) { }
-            }
 
-            if (_appChangedHandler != null)
-            {
-                var appState = (e != null) ?
-                    AppState.Connected.ToString() :
-                    AppState.Disconnected.ToString();
-
-                _appChangedHandler.Invoke(new
+                if (_accountStateChangedHandler != null)
                 {
-                    AppState = appState,
-                });
+                    _accountStateChangedHandler.Invoke(new
+                    {
+                        AccountState = e.State.ToString(),
+                    });
+                }
             }
         }
 
         private void StateChanged(object sender, ClientStateChangedEventArgs e)
         {
-            if (_stateChangedHandler != null)
+            if (_accountStateChangedHandler != null)
             {
-                _stateChangedHandler.Invoke(new
+                _accountStateChangedHandler.Invoke(new
                 {
-                    NewState = e.NewState.ToString(),
-                    OldState = e.OldState.ToString(),
+                    AccountState = e.NewState.ToString(),
                 });
             }
         }
 
-        private Func<object, Task<object>> _appChangedHandler;
-        private Func<object, Task<object>> _stateChangedHandler;
+        private Func<object, Task<object>> _appStateChangedHandler;
+        private Func<object, Task<object>> _accountStateChangedHandler;
         public bool RegisterEvents(
-            Func<object, Task<object>> appChanged,
-            Func<object, Task<object>> stateChanged)
+            Func<object, Task<object>> appStateChanged,
+            Func<object, Task<object>> accountStateChanged)
         {
-            _appChangedHandler = appChanged;
-            _stateChangedHandler = stateChanged;
+            _appStateChangedHandler = appStateChanged;
+            _accountStateChangedHandler = accountStateChanged;
             return true;
         }
     }

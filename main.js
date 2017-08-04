@@ -12,10 +12,10 @@ const WindowBinding = require('./src/components/window-binding');
 const ConnectNetSdk = require('./src/components/connect-netsdk');
 
 ConnectNetSdk.registerEvents({
-  appChanged: (args) => {
+  appStateChanged: (args) => {
     console.log(args);
   },
-  stateChanged: (args) => {
+  accountStateChanged: (args) => {
     console.log(args);
   },
 });

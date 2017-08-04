@@ -25,11 +25,11 @@ namespace netsdk
 
         public async Task<object> RegisterEvents(dynamic args)
         {
-            var appChanged = (Func<object, Task<object>>)args.appChanged;
-            var stateChanged = (Func<object, Task<object>>)args.stateChanged;
+            var appStateChanged = (Func<object, Task<object>>)args.appStateChanged;
+            var accountStateChanged = (Func<object, Task<object>>)args.accountStateChanged;
             return stateService.RegisterEvents(
-                appChanged: appChanged,
-                stateChanged: stateChanged
+                appStateChanged: appStateChanged,
+                accountStateChanged: accountStateChanged
             );
         }
 

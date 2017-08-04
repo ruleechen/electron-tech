@@ -13,4 +13,7 @@ module.exports = {
 
   sendMessage(contactUri, message, callback) {
   },
+
+  destroy(callback) {
+  },
 };

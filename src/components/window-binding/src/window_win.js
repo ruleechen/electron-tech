@@ -268,7 +268,9 @@ class WinWindow extends Window {
 
     const syncWithSfbPosition = (sfbRect) => {
       const rect = sfbRect || this.sfbWindow.getRect();
-      this.rcWindow.setPosition(rect.right, rect.top);
+      if (rect) {
+        this.rcWindow.setPosition(rect.right, rect.top);
+      }
     };
 
     this.sfbWindow.on('show', () => {

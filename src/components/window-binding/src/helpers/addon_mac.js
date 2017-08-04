@@ -8,8 +8,8 @@ const addon = require('bindings')('wb.node');
 const emitter = new EventEmitter();
 const setWinEventHook = (key, callback) => {
   if (!emitter.listeners(key).length) {
-    addon[key]((windowId) => {
-      emitter.emit(key, windowId);
+    addon[key]((...args) => {
+      emitter.emit(key, ...args);
     });
   }
   emitter.on(key, callback);

@@ -3,6 +3,7 @@
 */
 
 const path = require('path');
+const EventEmitter = require('events');
 const edge = require('electron-edge');
 
 let sdkExports;
@@ -21,18 +22,29 @@ const getSdkExports = () => {
       registerEvents: getExportFunc('RegisterEvents'),
       searchContacts: getExportFunc('SearchContacts'),
       sendMessage: getExportFunc('SendMessage'),
+      destroy: getExportFunc('Destroy'),
     };
   }
   return sdkExports;
 };
 
+const emitter = new EventEmitter();
+const registerEvent = (key, callback) => {
+  if (!emitter.listeners(key).length) {
+    getSdkExports().registerEvents({
+      [key]: (...args) => {
+        emitter.emit(key, ...args);
+      },
+    }, () => { });
+  }
+  emitter.on(key, callback);
+}
+
 // exports
 module.exports = {
 
-  registerEvents(stateChanged, callback) {
-    return getSdkExports().registerEvents({
-      stateChanged,
-    }, callback);
+  stateChanged(callback) {
+    registerEvent('stateChanged', callback);
   },
 
   searchContacts(searchText, callback) {
@@ -46,5 +58,10 @@ module.exports = {
       contactUri,
       message,
     }, callback);
+  },
+
+  destroy(callback) {
+    return getSdkExports().destroy({
+    }, callback || (() => { }));
   },
 };

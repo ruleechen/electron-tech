@@ -1,18 +1,29 @@
 ﻿using Microsoft.Lync.Model;
 using netsdk.Models;
+using System;
 using System.Collections.Generic;
 
-namespace netsdk
+namespace netsdk.Services
 {
     public class ContactService
     {
+        private LyncClientProvider lyncProvider;
+        public ContactService(LyncClientProvider provider)
+        {
+            lyncProvider = provider;
+        }
+
         public IEnumerable<ContactModel> SearchContacts(string searchText)
         {
+            var lyncClient = lyncProvider.GetLyncClient();
+            if (lyncClient == null)
+            {
+                throw new Exception("Can not found LyncClient.");
+            }
+
             var result = new List<ContactModel>();
 
-            var lyncClient = LyncClient.GetClient();
             var contactManager = lyncClient.ContactManager;
-
             object[] asyncState = { contactManager, searchText };
 
             var searchResult = contactManager.EndSearch(contactManager.BeginSearch(
@@ -43,7 +54,6 @@ namespace netsdk
             foreach (var item in endPoints)
             {
                 var contactEndPoint = item as ContactEndpoint;
-
                 if (contactEndPoint.Type != ContactEndpointType.Lync &&
                     contactEndPoint.Type != ContactEndpointType.Invalid &&
                     contactEndPoint.Type != ContactEndpointType.VoiceMail)

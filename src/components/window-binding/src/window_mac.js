@@ -231,7 +231,15 @@ class MacWindow extends Window {
     this.rcWindow = new RcWindow({ browserWindow });
     this.sfbWindow = new SfbWindow();
 
+    const syncWithSfbPosition = (sfbRect) => {
+      const rect = sfbRect || this.sfbWindow.getRect();
+      if (rect) {
+        this.rcWindow.setPosition(rect.right, rect.top);
+      }
+    };
+
     this.sfbWindow.on('foreground', (windowId) => {
+      syncWithSfbPosition();
       if (windowId === this.sfbWindow.windowId) {
         if (this.rcWindow.isMinimized()) {
           this.rcWindow.restore();
@@ -244,15 +252,14 @@ class MacWindow extends Window {
     });
 
     this.sfbWindow.on('move', (rect) => {
-      this.rcWindow.setPosition(rect.right, rect.top);
+      syncWithSfbPosition(rect);
     });
 
     this.sfbWindow.on('inited', () => {
       this.sfbWindow.show();
       this.sfbWindow.bringToTop();
       this.rcWindow.show();
-      const rect = this.sfbWindow.getRect();
-      this.rcWindow.setPosition(rect.right, rect.top);
+      syncWithSfbPosition();
     });
 
     this.sfbWindow.on('losed', () => {

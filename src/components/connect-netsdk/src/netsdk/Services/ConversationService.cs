@@ -1,15 +1,26 @@
 ﻿using Microsoft.Lync.Model;
 using Microsoft.Lync.Model.Conversation;
+using System;
 
-namespace netsdk
+namespace netsdk.Services
 {
     public class ConversationService
     {
+        private LyncClientProvider lyncProvider;
+        public ConversationService(LyncClientProvider provider)
+        {
+            lyncProvider = provider;
+        }
+
         public bool SendMessage(string contactUri, string message)
         {
-            var lyncClient = LyncClient.GetClient();
-            var contactIns = lyncClient.ContactManager.GetContactByUri(contactUri);
+            var lyncClient = lyncProvider.GetLyncClient();
+            if (lyncClient == null)
+            {
+                throw new Exception("Can not found LyncClient.");
+            }
 
+            var contactIns = lyncClient.ContactManager.GetContactByUri(contactUri);
             if (contactIns.UnifiedCommunicationType != UnifiedCommunicationType.Invalid ||
                 contactIns.UnifiedCommunicationType != UnifiedCommunicationType.NotEnabled)
             {

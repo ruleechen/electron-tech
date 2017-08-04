@@ -50,12 +50,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConversationService.cs" />
+    <Compile Include="Models\ConnectState.cs" />
+    <Compile Include="Services\ConversationService.cs" />
+    <Compile Include="LyncClientProvider.cs" />
     <Compile Include="Models\ContactModel.cs" />
-    <Compile Include="ContactService.cs" />
+    <Compile Include="Services\ContactService.cs" />
     <Compile Include="Models\ContactPhone.cs" />
-    <Compile Include="StateService.cs" />
-    <Compile Include="_exports.cs" />
+    <Compile Include="Services\StateService.cs" />
+    <Compile Include="Exports.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

@@ -18,8 +18,8 @@ namespace netsdk.Services
         {
             if (e != null)
             {
-                try { e.StateChanged -= StateChanged; } catch { }
-                e.StateChanged += StateChanged;
+                try { e.StateChanged -= StateChanged; } catch (Exception) { }
+                try { e.StateChanged += StateChanged; } catch (Exception) { }
             }
 
             if (_stateChangedHandler != null)

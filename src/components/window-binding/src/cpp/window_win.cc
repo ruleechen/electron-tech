@@ -294,16 +294,16 @@ namespace window_win {
     args.GetReturnValue().Set(Nan::New(true));
   }
 
-  void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_setWinEventHookObjectDestroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    auto eventType = EVENT_OBJECT_HIDE;
+    auto eventType = EVENT_OBJECT_DESTROY;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
-  void out_setWinEventHookObjectDestroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     auto callback = GetCallback(args);
-    auto eventType = EVENT_OBJECT_DESTROY;
+    auto eventType = EVENT_OBJECT_HIDE;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }

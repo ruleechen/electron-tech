@@ -106,6 +106,13 @@ const createMainWindow = () => {
       mainWindowBinding.unbind();
       mainWindowBinding = null;
     }
+    if (ConnectNetSdk) {
+      try {
+        ConnectNetSdk.destroy();
+      } catch (ex) {
+        console.error(ex);
+      }
+    }
   });
 
   const iconPath = WindowBinding.isWindows ?

@@ -59,6 +59,7 @@
     <Compile Include="Services\StateService.cs" />
     <Compile Include="Exports.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SystemEventHooks.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

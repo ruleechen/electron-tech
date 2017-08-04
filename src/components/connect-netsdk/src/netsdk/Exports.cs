@@ -7,6 +7,7 @@ namespace netsdk
     public class exports
     {
         static LyncClientProvider lyncProvider;
+        static SystemEventHooks systemEvents;
         static StateService stateService;
         static ContactService contactService;
         static ConversationService conversationService;
@@ -14,6 +15,7 @@ namespace netsdk
         static exports()
         {
             lyncProvider = new LyncClientProvider();
+            systemEvents = new SystemEventHooks(lyncProvider);
             stateService = new StateService(lyncProvider);
             contactService = new ContactService(lyncProvider);
             conversationService = new ConversationService(lyncProvider);
@@ -54,6 +56,14 @@ namespace netsdk
                 lyncProvider.Stop();
                 lyncProvider = null;
             }
+
+            if (systemEvents != null)
+            {
+                systemEvents.Dispose();
+                systemEvents = null;
+            }
+
+            Console.WriteLine("netsdk destroy");
 
             return true;
         }

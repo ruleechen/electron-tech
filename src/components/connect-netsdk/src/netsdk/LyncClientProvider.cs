@@ -13,6 +13,7 @@ namespace netsdk
         private Thread _thread;
         private volatile bool _running;
         private volatile bool _clientRequested;
+        private volatile bool _inSuppressedMode;
         private volatile LyncClient _lyncClient;
 
         private void MakeClientLoop()
@@ -30,6 +31,9 @@ namespace netsdk
             try
             {
                 _lyncClient = LyncClient.GetClient();
+                // LyncClient may still exists event if its app already been closed
+                // access InSuppressedMode to make sure LyncClient is available
+                _inSuppressedMode = _lyncClient.InSuppressedMode;
             }
             catch (Exception)
             {

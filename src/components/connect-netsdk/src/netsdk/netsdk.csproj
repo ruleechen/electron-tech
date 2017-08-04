@@ -50,7 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Models\ConnectState.cs" />
+    <Compile Include="Models\AppState.cs" />
     <Compile Include="Services\ConversationService.cs" />
     <Compile Include="LyncClientProvider.cs" />
     <Compile Include="Models\ContactModel.cs" />

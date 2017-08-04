@@ -1,6 +1,6 @@
 ﻿namespace netsdk.Models
 {
-    public enum ConnectState
+    public enum AppState
     {
         Disconnected = 0,
 

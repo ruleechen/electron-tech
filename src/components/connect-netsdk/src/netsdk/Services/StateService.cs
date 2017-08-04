@@ -22,18 +22,15 @@ namespace netsdk.Services
                 try { e.StateChanged += StateChanged; } catch (Exception) { }
             }
 
-            if (_stateChangedHandler != null)
+            if (_appChangedHandler != null)
             {
-                var connectState = (e != null) ?
-                    ConnectState.Connected.ToString() :
-                    ConnectState.Disconnected.ToString();
+                var appState = (e != null) ?
+                    AppState.Connected.ToString() :
+                    AppState.Disconnected.ToString();
 
-                _stateChangedHandler.Invoke(new
+                _appChangedHandler.Invoke(new
                 {
-                    Connect = connectState,
-                    NewState = string.Empty,
-                    OldState = string.Empty,
-                    StatusCode = -1,
+                    AppState = appState,
                 });
             }
         }
@@ -44,17 +41,19 @@ namespace netsdk.Services
             {
                 _stateChangedHandler.Invoke(new
                 {
-                    Connect = ConnectState.Connected.ToString(),
                     NewState = e.NewState.ToString(),
                     OldState = e.OldState.ToString(),
-                    StatusCode = e.StatusCode,
                 });
             }
         }
 
+        private Func<object, Task<object>> _appChangedHandler;
         private Func<object, Task<object>> _stateChangedHandler;
-        public bool RegisterEvents(Func<object, Task<object>> stateChanged)
+        public bool RegisterEvents(
+            Func<object, Task<object>> appChanged,
+            Func<object, Task<object>> stateChanged)
         {
+            _appChangedHandler = appChanged;
             _stateChangedHandler = stateChanged;
             return true;
         }

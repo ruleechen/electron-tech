@@ -37,13 +37,13 @@ module.exports = {
     }, callback || (() => { }));
   },
 
-  searchContacts({ searchText, callback }) {
+  searchContacts(searchText, callback) {
     return getSdkExports().searchContacts({
       searchText,
     }, callback);
   },
 
-  sendMessage({ contactUri, message, callback }) {
+  sendMessage(contactUri, message, callback) {
     return getSdkExports().sendMessage({
       contactUri,
       message,

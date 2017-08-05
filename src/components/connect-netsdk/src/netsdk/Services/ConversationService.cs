@@ -14,6 +14,8 @@ namespace netsdk.Services
 
         public bool SendMessage(string contactUri, string message)
         {
+            Console.WriteLine($"Start send message to <{contactUri}> with message <{message}>");
+
             var lyncClient = lyncProvider.GetLyncClient();
             if (lyncClient == null)
             {
@@ -49,6 +51,8 @@ namespace netsdk.Services
                     imModality.BeginSendMessage(message, null, null);
                 }
             }
+
+            Console.WriteLine("End send message");
 
             return true;
         }

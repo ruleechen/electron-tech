@@ -15,6 +15,8 @@ namespace netsdk.Services
 
         public IEnumerable<ContactModel> SearchContacts(string searchText)
         {
+            Console.WriteLine($"Start search by <{searchText}>");
+
             var lyncClient = lyncProvider.GetLyncClient();
             if (lyncClient == null)
             {
@@ -41,6 +43,8 @@ namespace netsdk.Services
                 var model = GetContactPhoneNumbers(contact);
                 result.Add(model);
             }
+
+            Console.WriteLine($"End search with items <{result.Count}>");
 
             return result;
         }

@@ -76,17 +76,15 @@ namespace netsdk
 
         private void OnObjectCreate(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
         {
-            Task.Run(() =>
-            {
-                if (lyncProvider != null)
-                {
-                    // for sync OnChanged event
-                    lyncProvider.GetLyncClient();
-                }
-            });
+            RefreshLyncClient();
         }
 
         private void OnObjectDestroy(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
+        {
+            RefreshLyncClient();
+        }
+
+        private void RefreshLyncClient()
         {
             Task.Run(() =>
             {

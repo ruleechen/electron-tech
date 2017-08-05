@@ -31,7 +31,7 @@ namespace netsdk
             try
             {
                 _lyncClient = LyncClient.GetClient();
-                // LyncClient may still exists event if its app already been closed
+                // LyncClient may still exists event when its app already been closed
                 // access InSuppressedMode to make sure LyncClient is available
                 _inSuppressedMode = _lyncClient.InSuppressedMode;
             }

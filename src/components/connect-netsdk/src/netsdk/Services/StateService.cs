@@ -7,11 +7,11 @@ namespace netsdk.Services
 {
     public class StateService
     {
-        private LyncClientProvider lyncProvider;
+        private LyncClientProvider _lyncProvider;
         public StateService(LyncClientProvider provider)
         {
-            lyncProvider = provider;
-            lyncProvider.OnChanged += LyncProvider_OnChanged;
+            _lyncProvider = provider;
+            _lyncProvider.OnChanged += LyncProvider_OnChanged;
         }
 
         private void LyncProvider_OnChanged(object sender, LyncClient e)
@@ -62,6 +62,7 @@ namespace netsdk.Services
         {
             _appStateChangedHandler = appStateChanged;
             _accountStateChangedHandler = accountStateChanged;
+            _lyncProvider.EmitChangedEvent(force: true);
             return true;
         }
     }

@@ -42,6 +42,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -50,7 +51,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LyncProcessWatcher.cs" />
     <Compile Include="Models\AppState.cs" />
+    <Compile Include="ProcessWatcher.cs" />
     <Compile Include="Services\ConversationService.cs" />
     <Compile Include="LyncClientProvider.cs" />
     <Compile Include="Models\ContactModel.cs" />

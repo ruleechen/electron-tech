@@ -21,7 +21,7 @@ namespace netsdk
             while (_running)
             {
                 if (_clientRequested) MakeClient();
-                TryEmitChanged();
+                EmitChangedEvent();
                 Thread.Sleep(100);
             }
         }
@@ -70,14 +70,19 @@ namespace netsdk
 
         private bool previousExists = false;
         public event EventHandler<LyncClient> OnChanged;
-        public void TryEmitChanged()
+        public void EmitChangedEvent(bool force = false)
         {
             var exists = (_lyncClient != null);
-            if (exists != previousExists && OnChanged != null)
+            if ((exists != previousExists || force))
             {
                 previousExists = exists;
-                OnChanged.Invoke(this, _lyncClient);
+
+                if (OnChanged != null)
+                {
+                    OnChanged.Invoke(this, _lyncClient);
+                }
             }
         }
+
     }
 }

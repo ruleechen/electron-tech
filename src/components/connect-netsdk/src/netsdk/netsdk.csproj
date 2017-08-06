@@ -51,6 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LyncLauncher.cs" />
     <Compile Include="LyncProcessWatcher.cs" />
     <Compile Include="Models\AppState.cs" />
     <Compile Include="ProcessWatcher.cs" />

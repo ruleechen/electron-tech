@@ -18,6 +18,7 @@ const getExportFunc = methodName => (
 const getSdkExports = () => {
   if (!sdkExports) {
     sdkExports = {
+      launchLync: getExportFunc('LaunchLync'),
       registerEvents: getExportFunc('RegisterEvents'),
       searchContacts: getExportFunc('SearchContacts'),
       sendMessage: getExportFunc('SendMessage'),
@@ -30,8 +31,13 @@ const getSdkExports = () => {
 // exports
 module.exports = {
 
+  launchLync(callback) {
+    return getSdkExports().launchLync({
+    }, callback || (() => { }));
+  },
+
   registerEvents({ appStateChanged, accountStateChanged, callback }) {
-    getSdkExports().registerEvents({
+    return getSdkExports().registerEvents({
       appStateChanged,
       accountStateChanged,
     }, callback || (() => { }));

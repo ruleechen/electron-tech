@@ -25,6 +25,12 @@ namespace netsdk
             lyncProvider.Start();
         }
 
+        public async Task<object> LaunchLync(dynamic args)
+        {
+            LyncLauncher.StartClient();
+            return true;
+        }
+
         public async Task<object> RegisterEvents(dynamic args)
         {
             var appStateChanged = (Func<object, Task<object>>)args.appStateChanged;

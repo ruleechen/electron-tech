@@ -149,17 +149,25 @@ namespace window_win {
     args.GetReturnValue().Set(obj);
   }
 
-  void out_setWindowPosition(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    // argument 0
+  void out_setWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument hwnd
     v8::String::Utf8Value arg0(args[0]);
     auto strHwnd = std::string(*arg0);
     auto hwnd = hwndMap[strHwnd];
-    // argument 1
-    auto x = args[1]->Int32Value();
-    // argument 2
-    auto y = args[2]->Int32Value();
+    // argument rect
+    auto left = args[1]->Int32Value();
+    auto top = args[3]->Int32Value();
+    auto right = args[2]->Int32Value();
+    auto bottom = args[4]->Int32Value();
     // apply
-    auto setted = SetWindowPos(hwnd, NULL, x, y, 0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE);
+    UINT flags = SWP_NOOWNERZORDER;
+    if (left == -32000 || top == -32000) {
+      flags = flags | SWP_NOMOVE;
+    }
+    if (right < 0 || bottom < 0) {
+      flags = flags | SWP_NOSIZE;
+    }
+    auto setted = SetWindowPos(hwnd, NULL, left, top, right - left, bottom - top, flags);
     // return
     auto ret = (setted == TRUE);
     args.GetReturnValue().Set(Nan::New(ret));
@@ -381,7 +389,7 @@ namespace window_win {
     exports->Set(Nan::New("bringWindowToTop").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_bringWindowToTop)->GetFunction());
     exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
-    exports->Set(Nan::New("setWindowPosition").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWindowPosition)->GetFunction());
+    exports->Set(Nan::New("setWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowVisible").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowVisible)->GetFunction());
     exports->Set(Nan::New("showWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_showWindow)->GetFunction());
     exports->Set(Nan::New("hideWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_hideWindow)->GetFunction());

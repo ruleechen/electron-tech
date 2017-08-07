@@ -64,10 +64,10 @@ const createAboutWindow = () => {
 const createMainWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 300,
-    height: 600,
+    width: 500,
+    height: 100,
     show: false,
-    frame: true,
+    frame: false,
     movable: true,
     closable: true,
     resizable: false,

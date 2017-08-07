@@ -81,9 +81,9 @@ class SfbWindow extends EventEmitter {
     // Addon.restoreWindow(this.windowId);
   }
 
-  setPosition(x, y) {
+  setRect(rect) {
     // if (!this.windowId) { return; }
-    // Addon.setPosition ?
+    // Addon.setWindowRect(this.windowId, rect.left, rect.top, rect.right, rect.bottom);
   }
 
   getRect() {
@@ -155,9 +155,9 @@ class RcWindow extends EventEmitter {
     this.browserWindow.restore();
   }
 
-  setPosition(x, y) {
-    // if (x === -32000 || y === -32000) { return; }
-    this.browserWindow.setPosition(x, y);
+  setRect(rect) {
+    this.browserWindow.setPosition(rect.left, rect.top);
+    this.browserWindow.setSize(rect.right - rect.left, rect.bottom - rect.top);
   }
 
   getRect() {
@@ -234,7 +234,12 @@ class MacWindow extends Window {
     const syncWithSfbPosition = (sfbRect) => {
       const rect = sfbRect || this.sfbWindow.getRect();
       if (rect) {
-        this.rcWindow.setPosition(rect.right, rect.top);
+        this.rcWindow.setRect({
+          left: rect.left,
+          right: rect.right,
+          top: rect.bottom,
+          bottom: rect.bottom + 100,
+        });
       }
     };
 

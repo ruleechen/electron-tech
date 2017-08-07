@@ -36,10 +36,18 @@ module.exports = {
     }, callback || (() => { }));
   },
 
-  registerEvents({ appStateChanged, accountStateChanged, callback }) {
+  registerEvents({
+    appStateChanged,
+    accountStateChanged,
+    conversationAdded,
+    conversationRemoved,
+    callback,
+  }) {
     return getSdkExports().registerEvents({
       appStateChanged,
       accountStateChanged,
+      conversationAdded,
+      conversationRemoved,
     }, callback || (() => { }));
   },
 

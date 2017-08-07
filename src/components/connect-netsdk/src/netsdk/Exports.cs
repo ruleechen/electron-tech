@@ -36,9 +36,13 @@ namespace netsdk
         {
             var appStateChanged = (Func<object, Task<object>>)args.appStateChanged;
             var accountStateChanged = (Func<object, Task<object>>)args.accountStateChanged;
+            var conversationAdded = (Func<object, Task<object>>)args.conversationAdded;
+            var conversationRemoved = (Func<object, Task<object>>)args.conversationRemoved;
             return eventService.RegisterEvents(
                 appStateChanged: appStateChanged,
-                accountStateChanged: accountStateChanged
+                accountStateChanged: accountStateChanged,
+                conversationAdded: conversationAdded,
+                conversationRemoved: conversationRemoved
             );
         }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace netsdk
+namespace netsdk.Monitors
 {
     public class LyncProcessWatcher : IDisposable
     {

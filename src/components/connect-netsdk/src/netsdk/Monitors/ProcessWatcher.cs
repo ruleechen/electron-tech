@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Management;
 
-namespace netsdk
+namespace netsdk.Monitors
 {
     public class ProcessWatcher : IDisposable
     {

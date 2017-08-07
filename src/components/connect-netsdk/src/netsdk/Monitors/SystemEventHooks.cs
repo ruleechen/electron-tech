@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-namespace netsdk
+namespace netsdk.Monitors
 {
     public class SystemEventHooks : IDisposable
     {

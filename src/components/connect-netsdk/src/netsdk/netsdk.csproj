@@ -51,19 +51,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LyncLauncher.cs" />
-    <Compile Include="LyncProcessWatcher.cs" />
+    <Compile Include="Services\LyncLauncher.cs" />
+    <Compile Include="Monitors\LyncProcessWatcher.cs" />
     <Compile Include="Models\AppState.cs" />
-    <Compile Include="ProcessWatcher.cs" />
+    <Compile Include="Monitors\ProcessWatcher.cs" />
     <Compile Include="Services\ConversationService.cs" />
     <Compile Include="LyncClientProvider.cs" />
     <Compile Include="Models\ContactModel.cs" />
     <Compile Include="Services\ContactService.cs" />
     <Compile Include="Models\ContactPhone.cs" />
-    <Compile Include="Services\StateService.cs" />
+    <Compile Include="Services\EventEmitService.cs" />
     <Compile Include="Exports.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SystemEventHooks.cs" />
+    <Compile Include="Monitors\SystemEventHooks.cs" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

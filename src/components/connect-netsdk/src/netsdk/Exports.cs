@@ -1,4 +1,5 @@
-﻿using netsdk.Services;
+﻿using netsdk.Monitors;
+using netsdk.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace netsdk
         static LyncClientProvider lyncProvider;
         static LyncProcessWatcher lyncWatcher;
         static SystemEventHooks systemEvents;
-        static StateService stateService;
+        static EventEmitService eventService;
         static ContactService contactService;
         static ConversationService conversationService;
 
@@ -18,7 +19,7 @@ namespace netsdk
             lyncProvider = new LyncClientProvider();
             lyncWatcher = new LyncProcessWatcher(lyncProvider);
             systemEvents = new SystemEventHooks(lyncProvider);
-            stateService = new StateService(lyncProvider);
+            eventService = new EventEmitService(lyncProvider);
             contactService = new ContactService(lyncProvider);
             conversationService = new ConversationService(lyncProvider);
 
@@ -35,7 +36,7 @@ namespace netsdk
         {
             var appStateChanged = (Func<object, Task<object>>)args.appStateChanged;
             var accountStateChanged = (Func<object, Task<object>>)args.accountStateChanged;
-            return stateService.RegisterEvents(
+            return eventService.RegisterEvents(
                 appStateChanged: appStateChanged,
                 accountStateChanged: accountStateChanged
             );
@@ -77,6 +78,12 @@ namespace netsdk
             {
                 systemEvents.Dispose();
                 systemEvents = null;
+            }
+
+            if (eventService != null)
+            {
+                eventService.Dispose();
+                eventService = null;
             }
 
             Console.WriteLine("netsdk destroy");

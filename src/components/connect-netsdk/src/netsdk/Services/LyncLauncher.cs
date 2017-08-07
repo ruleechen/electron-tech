@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace netsdk
+namespace netsdk.Services
 {
     public class LyncLauncher
     {

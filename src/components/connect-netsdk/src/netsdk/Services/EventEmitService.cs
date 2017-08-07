@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 
 namespace netsdk.Services
 {
-    public class StateService
+    public class EventEmitService : IDisposable
     {
         private LyncClientProvider _lyncProvider;
-        public StateService(LyncClientProvider provider)
+        private LyncClient _lastLyncClient;
+
+        public EventEmitService(LyncClientProvider provider)
         {
             _lyncProvider = provider;
             _lyncProvider.OnChanged += LyncProvider_OnChanged;
@@ -41,6 +43,8 @@ namespace netsdk.Services
                     });
                 }
             }
+
+            _lastLyncClient = e;
         }
 
         private void StateChanged(object sender, ClientStateChangedEventArgs e)
@@ -64,6 +68,21 @@ namespace netsdk.Services
             _accountStateChangedHandler = accountStateChanged;
             _lyncProvider.EmitChangedEvent(force: true);
             return true;
+        }
+
+        public void Dispose()
+        {
+            if (_lyncProvider != null)
+            {
+                _lyncProvider.OnChanged -= LyncProvider_OnChanged;
+                _lyncProvider = null;
+            }
+
+            if (_lastLyncClient != null)
+            {
+                try { _lastLyncClient.StateChanged -= StateChanged; } catch (Exception) { }
+                _lastLyncClient = null;
+            }
         }
     }
 }

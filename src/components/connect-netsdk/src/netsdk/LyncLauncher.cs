@@ -33,7 +33,7 @@ namespace netsdk
             }
             catch (InvalidOperationException)
             {
-                throw new Exception("No Lync or Skype client installed");
+                throw new Exception("No Lync client installed");
             }
         }
     }

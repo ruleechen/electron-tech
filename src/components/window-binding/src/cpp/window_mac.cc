@@ -114,6 +114,45 @@ namespace window_mac {
     args.GetReturnValue().Set(Nan::New(id));
   }
 
+  void out_getForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    bool setted = false;
+    ProcessSerialNumber frontProcId;
+    if (noErr == GetFrontProcess(&frontProcId)) {
+      std::cout << "GetFrontProcess" << std::endl;
+      setted = true;
+    }
+    // find
+    int id = -1;
+    int pid = -1;
+    if (setted) {
+      // all windows
+      CFArrayRef windowList = CGWindowListCopyWindowInfo(
+        kCGWindowListExcludeDesktopElements, //kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+        kCGNullWindowID
+      );
+      CFIndex count = CFArrayGetCount(windowList);
+      for (CFIndex i = 0; i < count; ++i) {
+        CFDictionaryRef window = reinterpret_cast<CFDictionaryRef>(CFArrayGetValueAtIndex(windowList, i));
+        CFNumberRef windowId = reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowNumber));
+        CFNumberRef windowPid =  reinterpret_cast<CFNumberRef>(CFDictionaryGetValue(window, kCGWindowOwnerPID));
+        if (windowId && windowPid) {
+          ProcessSerialNumber procId;
+          CFNumberGetValue(windowPid, kCFNumberIntType, &procId);
+          // detect
+          Boolean isSame;
+          if (noErr == SameProcess(&frontProcId, &procId, &isSame) && !isSame) {
+            CFNumberGetValue(windowId, kCFNumberIntType, &id);
+            CFNumberGetValue(windowPid, kCFNumberIntType, &pid);
+            break;
+          }
+        }
+      }
+      CFRelease(windowList);
+    }
+    // return
+    args.GetReturnValue().Set(Nan::New(id));
+  }
+
   void out_setForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     CGWindowID windowId = args[0]->Int32Value();
@@ -137,6 +176,7 @@ namespace window_mac {
       Boolean isSame;
       if (noErr == SameProcess(&frontProcId, &procId, &isSame) && !isSame) {
         SetFrontProcess(&procId);
+        std::cout << "SetFrontProcess" << std::endl;
         setted = true;
       }
     }
@@ -403,6 +443,7 @@ namespace window_mac {
   void Init(v8::Local<v8::Object> exports) {
     // exports
     exports->Set(Nan::New("findWindowId").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_findWindowId)->GetFunction());
+    exports->Set(Nan::New("getForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getForegroundWindow)->GetFunction());
     exports->Set(Nan::New("setForegroundWindow").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setForegroundWindow)->GetFunction());
     exports->Set(Nan::New("getWindowRect").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getWindowRect)->GetFunction());
     exports->Set(Nan::New("isWindowMinimized").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_isWindowMinimized)->GetFunction());

@@ -21,6 +21,10 @@ class AddonClass {
     return id === -1 ? null : id;
   }
 
+  static getForegroundWindow() {
+    return addon.getForegroundWindow();
+  }
+
   static setForegroundWindow(windowId) {
     return addon.setForegroundWindow(windowId);
   }

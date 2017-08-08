@@ -98,10 +98,11 @@ namespace netsdk.Services
         {
             var isFirstAppStateHandler = (appStateChanged != null && _appStateChangedHandler == null);
 
-            _appStateChangedHandler = appStateChanged ?? _appStateChangedHandler;
-            _accountStateChangedHandler = accountStateChanged ?? _accountStateChangedHandler;
-            _conversationAdded = conversationAdded ?? _conversationAdded;
-            _conversationRemoved = conversationRemoved ?? _conversationRemoved;
+            // store
+            _appStateChangedHandler = appStateChanged;
+            _accountStateChangedHandler = accountStateChanged;
+            _conversationAdded = conversationAdded;
+            _conversationRemoved = conversationRemoved;
 
             if (isFirstAppStateHandler)
             {

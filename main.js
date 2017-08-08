@@ -20,6 +20,12 @@ if (WindowBinding.isWindows) {
     accountStateChanged: (args) => {
       console.log(args);
     },
+    conversationAdded: () => {
+      console.log('conversation added');
+    },
+    conversationRemoved: () => {
+      console.log('conversation removed');
+    },
   });
 }
 

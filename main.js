@@ -228,9 +228,12 @@ ipc.on('sync-message', (event, arg) => {
       className: 'NetUIListViewItem',
       windowName: null,
     });
+    const itemInfos = addon.getContactListItemInfos(sfbHwnd);
+    const itemInfosJson = JSON.stringify(itemInfos);
     console.log(`found: ${dd2}`);
     console.log(`rcHwnd: ${rcHwnd}`);
     console.log(`sfbHwnd: ${sfbHwnd}`);
+    console.log(`rects: ${itemInfosJson}`);
   }
   if (WindowBinding.isMacOS) {
     const windowId = addon.findWindowId({

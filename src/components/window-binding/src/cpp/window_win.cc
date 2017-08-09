@@ -9,12 +9,21 @@
 #include <map>
 #include <windows.h>
 #include <winuser.h>
+// #include <UIAutomation.h>
+#include <UIAutomationClient.h>
+#include <comdef.h>
+// #include <OleAcc.h>
+// #include <vector>
+// #include <oleauto.h>
+// #include <cassert>
 
 namespace window_win {
 
   std::map<std::string, HWND> hwndMap;
   std::map<DWORD, HWINEVENTHOOK> hookMap;
   std::map<DWORD, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>> callbackMap;
+
+  IUIAutomation* automation = nullptr;
 
   std::string converHwndToString(HWND hwnd) {
     std::stringstream ss;
@@ -351,6 +360,162 @@ namespace window_win {
     args.GetReturnValue().Set(Nan::New(true));
   }
 
+  /****************************************** automation start ************************************************/
+
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
+  IUIAutomationCondition* BuildListItemCondition() {
+    // ClassName
+    std::string className = "NetUIListViewItem";
+    std::wstring stemp = std::wstring(className.begin(), className.end());
+    VARIANT property;
+    property.vt = VT_BSTR;
+    property.bstrVal = SysAllocString(stemp.c_str());
+    IUIAutomationCondition* classNamecondition = nullptr;
+    automation->CreatePropertyCondition(UIA_ClassNamePropertyId, property, &classNamecondition);
+    // collect
+    std::vector<IUIAutomationCondition*> conditions;
+    conditions.push_back(classNamecondition);
+    // merge
+    IUIAutomationCondition* condition = nullptr;
+    if (!conditions.empty()) {
+      automation->CreateAndConditionFromNativeArray(conditions.data(), static_cast<int>(conditions.size()), &condition);
+    }
+    // clean
+    for (auto& item : conditions) {
+      if (item) {
+        item->Release();
+      }
+    }
+    // ret
+    return condition;
+  }
+
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
+  IUIAutomationCondition* BuildContactPhotoCondition() {
+    // ClassName
+    std::string className = "NetUISimpleButton";
+    std::wstring classNameStemp = std::wstring(className.begin(), className.end());
+    VARIANT classNameProperty;
+    classNameProperty.vt = VT_BSTR;
+    classNameProperty.bstrVal = SysAllocString(classNameStemp.c_str());
+    IUIAutomationCondition* classNamecondition = nullptr;
+    automation->CreatePropertyCondition(UIA_ClassNamePropertyId, classNameProperty, &classNamecondition);
+    // AutomationId
+    std::string automationId = "idContactPhoto";
+    std::wstring automationIdStemp = std::wstring(automationId.begin(), automationId.end());
+    VARIANT automationIdProperty;
+    automationIdProperty.vt = VT_BSTR;
+    automationIdProperty.bstrVal = SysAllocString(automationIdStemp.c_str());
+    IUIAutomationCondition* automationIdcondition = nullptr;
+    automation->CreatePropertyCondition(UIA_AutomationIdPropertyId, automationIdProperty, &automationIdcondition);
+    // collect
+    std::vector<IUIAutomationCondition*> conditions;
+    conditions.push_back(classNamecondition);
+    conditions.push_back(automationIdcondition);
+    // merge
+    IUIAutomationCondition* condition = nullptr;
+    if (!conditions.empty()) {
+      automation->CreateAndConditionFromNativeArray(conditions.data(), static_cast<int>(conditions.size()), &condition);
+    }
+    // clean
+    for (auto& item : conditions) {
+      if (item) {
+        item->Release();
+      }
+    }
+    // ret
+    return condition;
+  }
+
+  int GetElementArrayLength(IUIAutomationElementArray* elements) {
+    if (elements) {
+      int length = 0;
+      if (SUCCEEDED(elements->get_Length(&length)))
+        return length;
+    }
+    return 0;
+  }
+
+  std::string bstr_to_str(BSTR source){
+    //source = L"lol2inside";
+    _bstr_t wrapped_bstr = _bstr_t(source);
+    int length = wrapped_bstr.length();
+    char* char_array = new char[length];
+    strcpy_s(char_array, length+1, wrapped_bstr);
+    return char_array;
+  }
+
+  void out_getContactListItemInfos(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    auto hwnd = hwndMap[strHwnd];
+    // create automation
+    if (!automation) {
+      CoCreateInstance(CLSID_CUIAutomation, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&automation));
+      std::cout << "automation created" << std::endl;
+    }
+    // get root element
+    IUIAutomationElement* rootElement = nullptr;
+    HRESULT hr = automation->ElementFromHandle(hwnd, &rootElement);
+    // query list items
+    IUIAutomationElementArray* foundItems = nullptr;
+    if (hr == S_OK && rootElement) {
+      // https://msdn.microsoft.com/en-us/library/system.windows.automation.automationelement.findall(v=vs.110).aspx
+      // https://msdn.microsoft.com/en-us/library/windows/desktop/ee671699(v=vs.85).aspx
+      auto condition = BuildListItemCondition();
+      rootElement->FindAll(TreeScope_Descendants, condition, &foundItems);
+      condition->Release();
+    }
+    auto length = GetElementArrayLength(foundItems);
+    std::cout << "Contact list items: " << length << std::endl;
+    // extract infos
+    auto isolate = args.GetIsolate();
+    auto infos = Nan::New<v8::Array>(length);
+    for (auto index = 0; index < length; ++index) {
+      auto obj = v8::Object::New(isolate);
+      IUIAutomationElement* element = nullptr;
+      if (foundItems->GetElement(index, &element) == S_OK) {
+        // get children
+        std::string name;
+        bool nameHasValue = false;
+        IUIAutomationElementArray* contactPhotos = nullptr;
+        auto photoCondition = BuildContactPhotoCondition();
+        if (element->FindAll(TreeScope_Descendants, photoCondition, &contactPhotos) == S_OK) {
+          auto photoLength = GetElementArrayLength(contactPhotos);
+          if (photoLength == 1) {
+            IUIAutomationElement* photo = nullptr;
+            if (contactPhotos->GetElement(0, &photo) == S_OK) {
+              // get name
+              BSTR bname;
+              if (photo->get_CurrentName(&bname) == S_OK) {
+                name = _bstr_t(bname);
+                nameHasValue = true;
+              }
+            }
+          }
+        }
+        if (nameHasValue) {
+          obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
+          // get rects
+          RECT rect;
+          if (element->get_CurrentBoundingRectangle(&rect) == S_OK) {
+            obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
+            obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
+            obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
+            obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(rect.bottom));
+          }
+        }
+      }
+      // add to array
+      Nan::Set(infos, index, obj);
+    }
+    // ret
+    args.GetReturnValue().Set(infos);
+  }
+
+  /****************************************** automation end ************************************************/
+
   void out_helloWorld(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
@@ -378,6 +543,10 @@ namespace window_win {
   void out_destroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     WrapUnhookWinEvent();
     hwndMap.clear();
+    if (automation) {
+      automation->Release();
+      automation = nullptr;
+    }
     std::cout << "destroy done" << std::endl;
   }
 
@@ -406,6 +575,8 @@ namespace window_win {
     exports->Set(Nan::New("setWinEventHookMinimizeStart").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookMinimizeStart)->GetFunction());
     exports->Set(Nan::New("setWinEventHookMinimizeEnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookMinimizeEnd)->GetFunction());
     exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
+    // automation
+    exports->Set(Nan::New("getContactListItemInfos").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getContactListItemInfos)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());
     exports->Set(Nan::New("testCallback").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_testCallback)->GetFunction());

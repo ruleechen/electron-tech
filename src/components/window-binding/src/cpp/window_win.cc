@@ -363,14 +363,10 @@ namespace window_win {
   class CustomPropertyChangedEventHandler: public IUIAutomationPropertyChangedEventHandler {
 
     private: LONG _refCount;
-    private: int _eventCount;
+    public: int _eventCount;
     private: v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callbackFunc;
 
     public: CustomPropertyChangedEventHandler(v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> cb): _refCount(1), _eventCount(0) {
-      SetCallback(cb);
-    }
-
-    public: void SetCallback(v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> cb) {
       callbackFunc = cb;
     }
 
@@ -390,9 +386,9 @@ namespace window_win {
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppInterface) {
       if (riid == __uuidof(IUnknown)) {
-        *ppInterface=static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
+        *ppInterface = static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
       } else if (riid == __uuidof(IUIAutomationPropertyChangedEventHandler)) {
-        *ppInterface=static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
+        *ppInterface = static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
       } else {
         *ppInterface = NULL;
         return E_NOINTERFACE;
@@ -403,6 +399,7 @@ namespace window_win {
 
     // IUIAutomationPropertyChangedEventHandler methods
     HRESULT STDMETHODCALLTYPE HandlePropertyChangedEvent(IUIAutomationElement* sender, PROPERTYID propertyId, VARIANT newValue) {
+      _eventCount++;
       std::cout << "HandlePropertyChangedEvent" << std::endl;
       auto isolate = v8::Isolate::GetCurrent();
       auto funcLocal = v8::Local<v8::Function>::New(isolate, callbackFunc);
@@ -417,7 +414,44 @@ namespace window_win {
   };
 
   IUIAutomation* automation = nullptr;
-  CustomPropertyChangedEventHandler* myPropertyChangedEventHandler;
+  CustomPropertyChangedEventHandler* propertyChangedHandler;
+
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
+  IUIAutomationCondition* BuildListViewCondition() {
+    // ClassName
+    std::string className = "NetUIVirtualListView";
+    std::wstring classNameStemp = std::wstring(className.begin(), className.end());
+    VARIANT classNameProperty;
+    classNameProperty.vt = VT_BSTR;
+    classNameProperty.bstrVal = SysAllocString(classNameStemp.c_str());
+    IUIAutomationCondition* classNamecondition = nullptr;
+    automation->CreatePropertyCondition(UIA_ClassNamePropertyId, classNameProperty, &classNamecondition);
+    // AutomationId
+    std::string automationId = "idVirtualList";
+    std::wstring automationIdStemp = std::wstring(automationId.begin(), automationId.end());
+    VARIANT automationIdProperty;
+    automationIdProperty.vt = VT_BSTR;
+    automationIdProperty.bstrVal = SysAllocString(automationIdStemp.c_str());
+    IUIAutomationCondition* automationIdcondition = nullptr;
+    automation->CreatePropertyCondition(UIA_AutomationIdPropertyId, automationIdProperty, &automationIdcondition);
+    // collect
+    std::vector<IUIAutomationCondition*> conditions;
+    conditions.push_back(classNamecondition);
+    conditions.push_back(automationIdcondition);
+    // merge
+    IUIAutomationCondition* condition = nullptr;
+    if (!conditions.empty()) {
+      automation->CreateAndConditionFromNativeArray(conditions.data(), static_cast<int>(conditions.size()), &condition);
+    }
+    // clean
+    for (auto& item : conditions) {
+      if (item) {
+        item->Release();
+      }
+    }
+    // ret
+    return condition;
+  }
 
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
   IUIAutomationCondition* BuildListItemCondition() {
@@ -502,7 +536,7 @@ namespace window_win {
     return char_array;
   }
 
-  void out_getContactListItemInfos(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_initAutomation(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     v8::String::Utf8Value arg0(args[0]);
     auto strHwnd = std::string(*arg0);
@@ -512,72 +546,82 @@ namespace window_win {
     // create automation
     if (!automation) {
       CoCreateInstance(CLSID_CUIAutomation, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&automation));
-      myPropertyChangedEventHandler = new CustomPropertyChangedEventHandler(callback);
       std::cout << "automation created" << std::endl;
-    } else {
-      myPropertyChangedEventHandler->SetCallback(callback);
-      std::cout << "callback update" << std::endl;
     }
     // get root element
     IUIAutomationElement* rootElement = nullptr;
-    HRESULT hr = automation->ElementFromHandle(hwnd, &rootElement);
-    // query list items
-    IUIAutomationElementArray* foundItems = nullptr;
-    if (hr == S_OK && rootElement) {
-      // https://msdn.microsoft.com/en-us/library/system.windows.automation.automationelement.findall(v=vs.110).aspx
-      // https://msdn.microsoft.com/en-us/library/windows/desktop/ee671699(v=vs.85).aspx
-      auto condition = BuildListItemCondition();
-      rootElement->FindAll(TreeScope_Descendants, condition, &foundItems);
-      condition->Release();
+    automation->ElementFromHandle(hwnd, &rootElement);
+    // get list view
+    IUIAutomationElement* listViewElement = nullptr;
+    auto listViewCondition = BuildListViewCondition();
+    rootElement->FindFirst(TreeScope_Descendants, listViewCondition, &listViewElement);
+    listViewCondition->Release();
+    // remove and add event
+    PROPERTYID propertyArray[] = { UIA_NamePropertyId };
+    propertyChangedHandler = new CustomPropertyChangedEventHandler(callback);
+    automation->RemovePropertyChangedEventHandler(listViewElement, propertyChangedHandler);
+    automation->AddPropertyChangedEventHandlerNativeArray(listViewElement, TreeScope_Subtree, NULL, propertyChangedHandler, propertyArray, 1);
+    std::cout << "automation inited" << std::endl;
+  }
+
+  void out_getContactListItemInfos(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    v8::String::Utf8Value arg0(args[0]);
+    auto strHwnd = std::string(*arg0);
+    auto hwnd = hwndMap[strHwnd];
+    // check
+    if (!automation) {
+      std::cout << "automation not yet inited " << std::endl;
+      auto emptyArray = Nan::New<v8::Array>(0);
+      args.GetReturnValue().Set(emptyArray);
+      return;
     }
-    auto length = GetElementArrayLength(foundItems);
-    std::cout << "Contact list items: " << length << std::endl;
+    // get root element
+    IUIAutomationElement* rootElement = nullptr;
+    automation->ElementFromHandle(hwnd, &rootElement);
+    // get list items
+    IUIAutomationElementArray* listItems = nullptr;
+    auto listItemCondition = BuildListItemCondition();
+    rootElement->FindAll(TreeScope_Descendants, listItemCondition, &listItems);
+    listItemCondition->Release();
+    // items length
+    auto length = GetElementArrayLength(listItems);
+    std::cout << "list items: " << length << std::endl;
     // extract infos
     auto isolate = args.GetIsolate();
     auto infos = Nan::New<v8::Array>(length);
+    auto contactPhotoCondition = BuildContactPhotoCondition();
     for (auto index = 0; index < length; ++index) {
       auto obj = v8::Object::New(isolate);
-      IUIAutomationElement* element = nullptr;
-      if (foundItems->GetElement(index, &element) == S_OK) {
-        // remove event
-        SAFEARRAY propertyArray[] = { UIA_ToggleToggleStatePropertyId, UIA_ToggleToggleStatePropertyId };
-        automation->RemovePropertyChangedEventHandler(element, (IUIAutomationPropertyChangedEventHandler*)myPropertyChangedEventHandler);
-        automation->AddPropertyChangedEventHandler(element, TreeScope_Element, NULL, (IUIAutomationPropertyChangedEventHandler*)myPropertyChangedEventHandler, propertyArray);
-        std::cout << "AddPropertyChangedEventHandler: " << index << std::endl;
-        // get children
-        std::string name;
-        bool nameHasValue = false;
-        IUIAutomationElementArray* contactPhotos = nullptr;
-        auto photoCondition = BuildContactPhotoCondition();
-        if (element->FindAll(TreeScope_Descendants, photoCondition, &contactPhotos) == S_OK) {
-          auto photoLength = GetElementArrayLength(contactPhotos);
-          if (photoLength == 1) {
-            IUIAutomationElement* photo = nullptr;
-            if (contactPhotos->GetElement(0, &photo) == S_OK) {
-              // get name
-              BSTR bname;
-              if (photo->get_CurrentName(&bname) == S_OK) {
-                name = _bstr_t(bname);
-                nameHasValue = true;
-              }
-            }
-          }
-        }
-        if (nameHasValue) {
+      // get item
+      IUIAutomationElement* item = nullptr;
+      listItems->GetElement(index, &item);
+      // find contact photo
+      IUIAutomationElement* contactPhoto = nullptr;
+      item->FindFirst(TreeScope_Descendants, contactPhotoCondition, &contactPhoto);
+      // get item name
+      std::string name;
+      bool nameHasValue = false;
+      if (contactPhoto) {
+        BSTR bname;
+        if (contactPhoto->get_CurrentName(&bname) == S_OK) {
+          name = _bstr_t(bname);
+          nameHasValue = true;
           obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
-          // get rects
-          RECT rect;
-          if (element->get_CurrentBoundingRectangle(&rect) == S_OK) {
-            obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
-            obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
-            obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
-            obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(rect.bottom));
-          }
         }
+      }
+      // get rects
+      RECT rect;
+      if (nameHasValue && item->get_CurrentBoundingRectangle(&rect) == S_OK) {
+        obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
+        obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
+        obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
+        obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(rect.bottom));
       }
       // add to array
       Nan::Set(infos, index, obj);
     }
+    contactPhotoCondition->Release();
     // ret
     args.GetReturnValue().Set(infos);
   }
@@ -615,6 +659,9 @@ namespace window_win {
       automation->Release();
       automation = nullptr;
     }
+    if (propertyChangedHandler != NULL) {
+      propertyChangedHandler->Release();
+    }
     std::cout << "destroy done" << std::endl;
   }
 
@@ -644,6 +691,7 @@ namespace window_win {
     exports->Set(Nan::New("setWinEventHookMinimizeEnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookMinimizeEnd)->GetFunction());
     exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
     // automation
+    exports->Set(Nan::New("initAutomation").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_initAutomation)->GetFunction());
     exports->Set(Nan::New("getContactListItemInfos").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getContactListItemInfos)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());

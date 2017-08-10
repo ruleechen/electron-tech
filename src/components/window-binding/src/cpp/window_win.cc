@@ -618,15 +618,12 @@ namespace window_win {
             listItems->GetElement(index, &item);
             // find contact photo
             IUIAutomationElement* contactPhoto = nullptr;
-            item->FindFirst(TreeScope_Descendants, contactPhotoCondition, &contactPhoto);
+            hr = item->FindFirst(TreeScope_Descendants, contactPhotoCondition, &contactPhoto);
             // get item name
-            std::string name;
-            bool nameHasValue = false;
-            if (contactPhoto) {
+            if (hr == S_OK && contactPhoto) {
               BSTR bname;
               if (contactPhoto->get_CurrentName(&bname) == S_OK) {
-                name = _bstr_t(bname);
-                nameHasValue = true;
+                std::string name = _bstr_t(bname);
                 obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
               }
             }

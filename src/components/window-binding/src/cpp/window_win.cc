@@ -425,7 +425,7 @@ namespace window_win {
   };
 
   IUIAutomation* automation = nullptr;
-  CustomAutomationEventHandler* eventHandler;
+  CustomAutomationEventHandler* eventHandler = nullptr;
 
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
   IUIAutomationCondition* BuildListViewCondition() {
@@ -559,21 +559,30 @@ namespace window_win {
       CoCreateInstance(CLSID_CUIAutomation, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&automation));
       std::cout << "automation created" << std::endl;
     }
+    HRESULT hr;
+    auto inited = false;
     // get root element
     IUIAutomationElement* rootElement = nullptr;
-    automation->ElementFromHandle(hwnd, &rootElement);
-    // get list view
-    IUIAutomationElement* listViewElement = nullptr;
-    auto listViewCondition = BuildListViewCondition();
-    rootElement->FindFirst(TreeScope_Descendants, listViewCondition, &listViewElement);
-    listViewCondition->Release();
-    // remove and add event
-    eventHandler = new CustomAutomationEventHandler(callback);
-    automation->RemoveAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, eventHandler);
-    automation->AddAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
-    automation->RemoveAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, eventHandler);
-    automation->AddAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
-    std::cout << "automation inited" << std::endl;
+    hr = automation->ElementFromHandle(hwnd, &rootElement);
+    if (hr == S_OK && rootElement) {
+      // get list view
+      IUIAutomationElement* listViewElement = nullptr;
+      auto listViewCondition = BuildListViewCondition();
+      hr = rootElement->FindFirst(TreeScope_Descendants, listViewCondition, &listViewElement);
+      listViewCondition->Release();
+      if (hr == S_OK && listViewElement) {
+        // remove/add event
+        eventHandler = new CustomAutomationEventHandler(callback);
+        automation->RemoveAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, eventHandler);
+        automation->AddAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
+        automation->RemoveAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, eventHandler);
+        automation->AddAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
+        inited = true;
+        std::cout << "automation inited" << std::endl;
+      }
+    }
+    // ret
+    args.GetReturnValue().Set(inited);
   }
 
   void out_getContactListItemInfos(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -582,58 +591,60 @@ namespace window_win {
     auto strHwnd = std::string(*arg0);
     auto hwnd = hwndMap[strHwnd];
     // check
-    if (!automation) {
-      std::cout << "automation not yet inited " << std::endl;
-      auto emptyArray = Nan::New<v8::Array>(0);
-      args.GetReturnValue().Set(emptyArray);
-      return;
-    }
-    // get root element
-    IUIAutomationElement* rootElement = nullptr;
-    automation->ElementFromHandle(hwnd, &rootElement);
-    // get list items
-    IUIAutomationElementArray* listItems = nullptr;
-    auto listItemCondition = BuildListItemCondition();
-    rootElement->FindAll(TreeScope_Descendants, listItemCondition, &listItems);
-    listItemCondition->Release();
-    // items length
-    auto length = GetElementArrayLength(listItems);
-    std::cout << "list items: " << length << std::endl;
-    // extract infos
-    auto isolate = args.GetIsolate();
-    auto infos = Nan::New<v8::Array>(length);
-    auto contactPhotoCondition = BuildContactPhotoCondition();
-    for (auto index = 0; index < length; ++index) {
-      auto obj = v8::Object::New(isolate);
-      // get item
-      IUIAutomationElement* item = nullptr;
-      listItems->GetElement(index, &item);
-      // find contact photo
-      IUIAutomationElement* contactPhoto = nullptr;
-      item->FindFirst(TreeScope_Descendants, contactPhotoCondition, &contactPhoto);
-      // get item name
-      std::string name;
-      bool nameHasValue = false;
-      if (contactPhoto) {
-        BSTR bname;
-        if (contactPhoto->get_CurrentName(&bname) == S_OK) {
-          name = _bstr_t(bname);
-          nameHasValue = true;
-          obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
+    auto infos = Nan::New<v8::Array>(0);
+    if (automation) {
+      HRESULT hr;
+      // get root element
+      IUIAutomationElement* rootElement = nullptr;
+      hr = automation->ElementFromHandle(hwnd, &rootElement);
+      if (hr == S_OK && rootElement) {
+        // get list items
+        IUIAutomationElementArray* listItems = nullptr;
+        auto listItemCondition = BuildListItemCondition();
+        hr = rootElement->FindAll(TreeScope_Descendants, listItemCondition, &listItems);
+        listItemCondition->Release();
+        if (hr == S_OK && listItems) {
+          // items length
+          auto length = GetElementArrayLength(listItems);
+          std::cout << "list items: " << length << std::endl;
+          // extract infos
+          auto isolate = args.GetIsolate();
+          infos = Nan::New<v8::Array>(length);
+          auto contactPhotoCondition = BuildContactPhotoCondition();
+          for (auto index = 0; index < length; ++index) {
+            auto obj = v8::Object::New(isolate);
+            // get item
+            IUIAutomationElement* item = nullptr;
+            listItems->GetElement(index, &item);
+            // find contact photo
+            IUIAutomationElement* contactPhoto = nullptr;
+            item->FindFirst(TreeScope_Descendants, contactPhotoCondition, &contactPhoto);
+            // get item name
+            std::string name;
+            bool nameHasValue = false;
+            if (contactPhoto) {
+              BSTR bname;
+              if (contactPhoto->get_CurrentName(&bname) == S_OK) {
+                name = _bstr_t(bname);
+                nameHasValue = true;
+                obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
+              }
+            }
+            // get rects
+            RECT rect;
+            if (item->get_CurrentBoundingRectangle(&rect) == S_OK) {
+              obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
+              obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
+              obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
+              obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(rect.bottom));
+            }
+            // add to array
+            Nan::Set(infos, index, obj);
+          }
+          contactPhotoCondition->Release();
         }
       }
-      // get rects
-      RECT rect;
-      if (item->get_CurrentBoundingRectangle(&rect) == S_OK) {
-        obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
-        obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
-        obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
-        obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(rect.bottom));
-      }
-      // add to array
-      Nan::Set(infos, index, obj);
     }
-    contactPhotoCondition->Release();
     // ret
     args.GetReturnValue().Set(infos);
   }
@@ -671,8 +682,9 @@ namespace window_win {
       automation->Release();
       automation = nullptr;
     }
-    if (eventHandler != NULL) {
+    if (eventHandler) {
       eventHandler->Release();
+      eventHandler = nullptr;
     }
     std::cout << "destroy done" << std::endl;
   }

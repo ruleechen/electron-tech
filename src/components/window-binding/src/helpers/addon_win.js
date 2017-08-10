@@ -119,8 +119,8 @@ class AddonClass {
     setWinEventHook('setWinEventHookForeground', callback);
   }
 
-  static getContactListItemInfos(hwnd) {
-    return addon.getContactListItemInfos(hwnd).filter(x => Object.keys(x).length > 0);
+  static getContactListItemInfos(hwnd, callback) {
+    return addon.getContactListItemInfos(hwnd, callback).filter(x => Object.keys(x).length > 0);
   }
 
   static helloWorld() {

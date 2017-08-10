@@ -23,8 +23,6 @@ namespace window_win {
   std::map<DWORD, HWINEVENTHOOK> hookMap;
   std::map<DWORD, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>> callbackMap;
 
-  IUIAutomation* automation = nullptr;
-
   std::string converHwndToString(HWND hwnd) {
     std::stringstream ss;
     ss << hwnd;
@@ -292,10 +290,10 @@ namespace window_win {
     callbackMap.clear();
   }
 
-  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> GetCallback(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> GetCallback(const Nan::FunctionCallbackInfo<v8::Value>& args, int index) {
     auto isolate = args.GetIsolate();
-    auto arg0 = v8::Handle<v8::Function>::Cast(args[0]);
-    v8::Persistent<v8::Function> callback(isolate, arg0);
+    auto arg = v8::Handle<v8::Function>::Cast(args[index]);
+    v8::Persistent<v8::Function> callback(isolate, arg);
     return callback;
   }
 
@@ -305,56 +303,56 @@ namespace window_win {
   }
 
   void out_setWinEventHookObjectCreate(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_OBJECT_CREATE;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectDestroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_OBJECT_DESTROY;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_OBJECT_HIDE;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectShow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_OBJECT_SHOW;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookLocationChange(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_OBJECT_LOCATIONCHANGE;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookMinimizeStart(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_SYSTEM_MINIMIZESTART;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookMinimizeEnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_SYSTEM_MINIMIZEEND;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args);
+    auto callback = GetCallback(args, 0);
     auto eventType = EVENT_SYSTEM_FOREGROUND;
     WrapSetWinEventHook(eventType, callback);
     args.GetReturnValue().Set(Nan::New(true));
@@ -362,16 +360,75 @@ namespace window_win {
 
   /****************************************** automation start ************************************************/
 
+  class CustomPropertyChangedEventHandler: public IUIAutomationPropertyChangedEventHandler {
+
+    private: LONG _refCount;
+    private: int _eventCount;
+    private: v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callbackFunc;
+
+    public: CustomPropertyChangedEventHandler(v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> cb): _refCount(1), _eventCount(0) {
+      SetCallback(cb);
+    }
+
+    public: void SetCallback(v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> cb) {
+      callbackFunc = cb;
+    }
+
+    ULONG STDMETHODCALLTYPE AddRef() {
+      ULONG ret = InterlockedIncrement(&_refCount);
+      return ret;
+    }
+
+    ULONG STDMETHODCALLTYPE Release() {
+      ULONG ret = InterlockedDecrement(&_refCount);
+      if (ret == 0) {
+        delete this;
+        return 0;
+      }
+      return ret;
+    }
+
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppInterface) {
+      if (riid == __uuidof(IUnknown)) {
+        *ppInterface=static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
+      } else if (riid == __uuidof(IUIAutomationPropertyChangedEventHandler)) {
+        *ppInterface=static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
+      } else {
+        *ppInterface = NULL;
+        return E_NOINTERFACE;
+      }
+      this->AddRef();
+      return S_OK;
+    }
+
+    // IUIAutomationPropertyChangedEventHandler methods
+    HRESULT STDMETHODCALLTYPE HandlePropertyChangedEvent(IUIAutomationElement* sender, PROPERTYID propertyId, VARIANT newValue) {
+      std::cout << "HandlePropertyChangedEvent" << std::endl;
+      auto isolate = v8::Isolate::GetCurrent();
+      auto funcLocal = v8::Local<v8::Function>::New(isolate, callbackFunc);
+      Nan::Callback callback(funcLocal);
+      const unsigned argc = 1;
+      v8::Local<v8::Value> argv[argc] = {
+        Nan::New("abc").ToLocalChecked()
+      };
+      callback.Call(argc, argv);
+      return S_OK;
+    }
+  };
+
+  IUIAutomation* automation = nullptr;
+  CustomPropertyChangedEventHandler* myPropertyChangedEventHandler;
+
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
   IUIAutomationCondition* BuildListItemCondition() {
     // ClassName
     std::string className = "NetUIListViewItem";
-    std::wstring stemp = std::wstring(className.begin(), className.end());
-    VARIANT property;
-    property.vt = VT_BSTR;
-    property.bstrVal = SysAllocString(stemp.c_str());
+    std::wstring classNameStemp = std::wstring(className.begin(), className.end());
+    VARIANT classNameProperty;
+    classNameProperty.vt = VT_BSTR;
+    classNameProperty.bstrVal = SysAllocString(classNameStemp.c_str());
     IUIAutomationCondition* classNamecondition = nullptr;
-    automation->CreatePropertyCondition(UIA_ClassNamePropertyId, property, &classNamecondition);
+    automation->CreatePropertyCondition(UIA_ClassNamePropertyId, classNameProperty, &classNamecondition);
     // collect
     std::vector<IUIAutomationCondition*> conditions;
     conditions.push_back(classNamecondition);
@@ -450,10 +507,16 @@ namespace window_win {
     v8::String::Utf8Value arg0(args[0]);
     auto strHwnd = std::string(*arg0);
     auto hwnd = hwndMap[strHwnd];
+    // argument 1
+    auto callback = GetCallback(args, 1);
     // create automation
     if (!automation) {
       CoCreateInstance(CLSID_CUIAutomation, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&automation));
+      myPropertyChangedEventHandler = new CustomPropertyChangedEventHandler(callback);
       std::cout << "automation created" << std::endl;
+    } else {
+      myPropertyChangedEventHandler->SetCallback(callback);
+      std::cout << "callback update" << std::endl;
     }
     // get root element
     IUIAutomationElement* rootElement = nullptr;
@@ -476,6 +539,11 @@ namespace window_win {
       auto obj = v8::Object::New(isolate);
       IUIAutomationElement* element = nullptr;
       if (foundItems->GetElement(index, &element) == S_OK) {
+        // remove event
+        SAFEARRAY propertyArray[] = { UIA_ToggleToggleStatePropertyId, UIA_ToggleToggleStatePropertyId };
+        automation->RemovePropertyChangedEventHandler(element, (IUIAutomationPropertyChangedEventHandler*)myPropertyChangedEventHandler);
+        automation->AddPropertyChangedEventHandler(element, TreeScope_Element, NULL, (IUIAutomationPropertyChangedEventHandler*)myPropertyChangedEventHandler, propertyArray);
+        std::cout << "AddPropertyChangedEventHandler: " << index << std::endl;
         // get children
         std::string name;
         bool nameHasValue = false;

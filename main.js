@@ -228,7 +228,12 @@ ipc.on('sync-message', (event, arg) => {
       className: 'NetUIListViewItem',
       windowName: null,
     });
-    const itemInfos = addon.getContactListItemInfos(sfbHwnd);
+    const infosCallback = (propertyName) => {
+      const infos = addon.getContactListItemInfos(sfbHwnd, infosCallback);
+      const infosJson = JSON.stringify(infos);
+      console.log(`rects: ${infosJson}`);
+    };
+    const itemInfos = addon.getContactListItemInfos(sfbHwnd, infosCallback);
     const itemInfosJson = JSON.stringify(itemInfos);
     console.log(`found: ${dd2}`);
     console.log(`rcHwnd: ${rcHwnd}`);

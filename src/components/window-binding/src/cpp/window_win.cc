@@ -360,13 +360,13 @@ namespace window_win {
 
   /****************************************** automation start ************************************************/
 
-  class CustomPropertyChangedEventHandler: public IUIAutomationPropertyChangedEventHandler {
+  class CustomAutomationEventHandler: public IUIAutomationEventHandler {
 
     private: LONG _refCount;
     public: int _eventCount;
     private: v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callbackFunc;
 
-    public: CustomPropertyChangedEventHandler(v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> cb): _refCount(1), _eventCount(0) {
+    public: CustomAutomationEventHandler(v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> cb): _refCount(1), _eventCount(0) {
       callbackFunc = cb;
     }
 
@@ -386,9 +386,9 @@ namespace window_win {
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppInterface) {
       if (riid == __uuidof(IUnknown)) {
-        *ppInterface = static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
-      } else if (riid == __uuidof(IUIAutomationPropertyChangedEventHandler)) {
-        *ppInterface = static_cast<IUIAutomationPropertyChangedEventHandler*>(this);
+        *ppInterface = static_cast<IUIAutomationEventHandler*>(this);
+      } else if (riid == __uuidof(IUIAutomationEventHandler)) {
+        *ppInterface = static_cast<IUIAutomationEventHandler*>(this);
       } else {
         *ppInterface = NULL;
         return E_NOINTERFACE;
@@ -397,10 +397,20 @@ namespace window_win {
       return S_OK;
     }
 
-    // IUIAutomationPropertyChangedEventHandler methods
-    HRESULT STDMETHODCALLTYPE HandlePropertyChangedEvent(IUIAutomationElement* sender, PROPERTYID propertyId, VARIANT newValue) {
+    HRESULT STDMETHODCALLTYPE HandleAutomationEvent(IUIAutomationElement* sender, EVENTID eventId) {
       _eventCount++;
-      std::cout << "HandlePropertyChangedEvent" << std::endl;
+      switch (eventId) {
+        case UIA_Invoke_InvokedEventId:
+          std::cout << "automation event UIA_Invoke_InvokedEventId" << std::endl;
+          break;
+        case UIA_StructureChangedEventId:
+          std::cout << "automation event UIA_StructureChangedEventId" << std::endl;
+          break;
+        default:
+          std::cout << "automation event " << eventId << std::endl;
+          break;
+      }
+      // callback
       auto isolate = v8::Isolate::GetCurrent();
       auto funcLocal = v8::Local<v8::Function>::New(isolate, callbackFunc);
       Nan::Callback callback(funcLocal);
@@ -409,12 +419,13 @@ namespace window_win {
         Nan::New("abc").ToLocalChecked()
       };
       callback.Call(argc, argv);
+      // ret
       return S_OK;
     }
   };
 
   IUIAutomation* automation = nullptr;
-  CustomPropertyChangedEventHandler* propertyChangedHandler;
+  CustomAutomationEventHandler* eventHandler;
 
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
   IUIAutomationCondition* BuildListViewCondition() {
@@ -557,10 +568,11 @@ namespace window_win {
     rootElement->FindFirst(TreeScope_Descendants, listViewCondition, &listViewElement);
     listViewCondition->Release();
     // remove and add event
-    PROPERTYID propertyArray[] = { UIA_NamePropertyId };
-    propertyChangedHandler = new CustomPropertyChangedEventHandler(callback);
-    automation->RemovePropertyChangedEventHandler(listViewElement, propertyChangedHandler);
-    automation->AddPropertyChangedEventHandlerNativeArray(listViewElement, TreeScope_Subtree, NULL, propertyChangedHandler, propertyArray, 1);
+    eventHandler = new CustomAutomationEventHandler(callback);
+    automation->RemoveAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, eventHandler);
+    automation->AddAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
+    automation->RemoveAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, eventHandler);
+    automation->AddAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
     std::cout << "automation inited" << std::endl;
   }
 
@@ -612,7 +624,7 @@ namespace window_win {
       }
       // get rects
       RECT rect;
-      if (nameHasValue && item->get_CurrentBoundingRectangle(&rect) == S_OK) {
+      if (item->get_CurrentBoundingRectangle(&rect) == S_OK) {
         obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
         obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
         obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
@@ -659,8 +671,8 @@ namespace window_win {
       automation->Release();
       automation = nullptr;
     }
-    if (propertyChangedHandler != NULL) {
-      propertyChangedHandler->Release();
+    if (eventHandler != NULL) {
+      eventHandler->Release();
     }
     std::cout << "destroy done" << std::endl;
   }

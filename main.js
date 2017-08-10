@@ -203,6 +203,11 @@ ipc.on('async-message', (event, arg) => {
   });
 });
 
+const buttons = [];
+const showButtons = (itemInfos) => {
+  // TODO:
+};
+
 ipc.on('sync-message', (event, arg) => {
   const addon = WindowBinding.Core.Addon;
   event.returnValue = addon.helloWorld();
@@ -230,10 +235,12 @@ ipc.on('sync-message', (event, arg) => {
     });
     addon.initAutomation(sfbHwnd, () => {
       const infos = addon.getContactListItemInfos(sfbHwnd);
+      showButtons(infos);
       const infosJson = JSON.stringify(infos);
       console.log(`rects sub: ${infosJson}`);
     });
     const itemInfos = addon.getContactListItemInfos(sfbHwnd);
+    showButtons(itemInfos);
     const itemInfosJson = JSON.stringify(itemInfos);
     console.log(`found: ${dd2}`);
     console.log(`rcHwnd: ${rcHwnd}`);

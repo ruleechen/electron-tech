@@ -493,7 +493,7 @@ namespace window_win {
   }
 
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
-  IUIAutomationCondition* BuildContactPhotoCondition() {
+  IUIAutomationCondition* BuildContactNameCondition() {
     // ClassName
     std::string className = "NetUISimpleButton";
     std::wstring classNameStemp = std::wstring(className.begin(), className.end());
@@ -503,7 +503,7 @@ namespace window_win {
     IUIAutomationCondition* classNamecondition = nullptr;
     automation->CreatePropertyCondition(UIA_ClassNamePropertyId, classNameProperty, &classNamecondition);
     // AutomationId
-    std::string automationId = "idContactPhoto";
+    std::string automationId = "idContactName";
     std::wstring automationIdStemp = std::wstring(automationId.begin(), automationId.end());
     VARIANT automationIdProperty;
     automationIdProperty.vt = VT_BSTR;
@@ -610,19 +610,19 @@ namespace window_win {
           // extract infos
           auto isolate = args.GetIsolate();
           infos = Nan::New<v8::Array>(length);
-          auto contactPhotoCondition = BuildContactPhotoCondition();
+          auto contactNameCondition = BuildContactNameCondition();
           for (auto index = 0; index < length; ++index) {
             auto obj = v8::Object::New(isolate);
             // get item
             IUIAutomationElement* item = nullptr;
             listItems->GetElement(index, &item);
-            // find contact photo
-            IUIAutomationElement* contactPhoto = nullptr;
-            hr = item->FindFirst(TreeScope_Descendants, contactPhotoCondition, &contactPhoto);
+            // find contact name
+            IUIAutomationElement* contactNameElement = nullptr;
+            hr = item->FindFirst(TreeScope_Descendants, contactNameCondition, &contactNameElement);
             // get item name
-            if (hr == S_OK && contactPhoto) {
+            if (hr == S_OK && contactNameElement) {
               BSTR bname;
-              if (contactPhoto->get_CurrentName(&bname) == S_OK) {
+              if (contactNameElement->get_CurrentName(&bname) == S_OK) {
                 std::string name = _bstr_t(bname);
                 obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
               }
@@ -638,7 +638,7 @@ namespace window_win {
             // add to array
             Nan::Set(infos, index, obj);
           }
-          contactPhotoCondition->Release();
+          contactNameCondition->Release();
         }
       }
     }

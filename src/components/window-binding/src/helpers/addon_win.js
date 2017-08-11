@@ -124,7 +124,7 @@ class AddonClass {
   }
 
   static getContactListItemInfos(hwnd) {
-    return addon.getContactListItemInfos(hwnd);
+    return addon.getContactListItemInfos(hwnd).sort((a, b) => (a.top - b.top));
   }
 
   static helloWorld() {

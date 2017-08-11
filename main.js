@@ -233,7 +233,7 @@ ipc.on('sync-message', (event, arg) => {
       className: 'NetUIListViewItem',
       windowName: null,
     });
-    addon.initAutomation(sfbHwnd, () => {
+    addon.initContactListAutomation(sfbHwnd, () => {
       const infos = addon.getContactListItemInfos(sfbHwnd);
       showButtons(infos);
       const infosJson = JSON.stringify(infos);
@@ -261,7 +261,7 @@ ipc.on('sync-message', (event, arg) => {
       console.log(`foreground: ${setted}`);
     }, 1000);
 
-    addon.setWinEventHookForeground((pid) => {
+    addon.setWinEventHookForeground(null, (pid) => {
       console.log(`pid: ${pid}`);
       const rect1 = addon.getWindowRect(windowId);
       console.log(`rect: ${JSON.stringify(rect1)}`);

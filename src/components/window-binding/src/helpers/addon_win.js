@@ -6,13 +6,14 @@ const EventEmitter = require('events');
 const addon = require('bindings')('wb.node');
 
 const emitter = new EventEmitter();
-const setWinEventHook = (key, callback) => {
-  if (!emitter.listeners(key).length) {
-    addon[key]((windowId) => {
-      emitter.emit(key, windowId);
+const setWinEventHook = (key, hwnd, callback) => {
+  const name = `${key}.${hwnd}`;
+  if (!emitter.listeners(name).length) {
+    addon[key](hwnd, (windowId) => {
+      emitter.emit(name, windowId);
     });
   }
-  emitter.on(key, callback);
+  emitter.on(name, callback);
 }
 
 class AddonClass {
@@ -87,40 +88,40 @@ class AddonClass {
     return addon.unhookWinEvents();
   }
 
-  static setWinEventHookObjectCreate(callback) {
-    setWinEventHook('setWinEventHookObjectCreate', callback);
+  static setWinEventHookObjectCreate(hwnd, callback) {
+    setWinEventHook('setWinEventHookObjectCreate', hwnd, callback);
   }
 
-  static setWinEventHookObjectDestroy(callback) {
-    setWinEventHook('setWinEventHookObjectDestroy', callback);
+  static setWinEventHookObjectDestroy(hwnd, callback) {
+    setWinEventHook('setWinEventHookObjectDestroy', hwnd, callback);
   }
 
-  static setWinEventHookObjectHide(callback) {
-    setWinEventHook('setWinEventHookObjectHide', callback);
+  static setWinEventHookObjectShow(hwnd, callback) {
+    setWinEventHook('setWinEventHookObjectShow', hwnd, callback);
   }
 
-  static setWinEventHookObjectShow(callback) {
-    setWinEventHook('setWinEventHookObjectShow', callback);
+  static setWinEventHookObjectHide(hwnd, callback) {
+    setWinEventHook('setWinEventHookObjectHide', hwnd, callback);
   }
 
-  static setWinEventHookLocationChange(callback) {
-    setWinEventHook('setWinEventHookLocationChange', callback);
+  static setWinEventHookLocationChange(hwnd, callback) {
+    setWinEventHook('setWinEventHookLocationChange', hwnd, callback);
   }
 
-  static setWinEventHookMinimizeStart(callback) {
-    setWinEventHook('setWinEventHookMinimizeStart', callback);
+  static setWinEventHookMinimizeStart(hwnd, callback) {
+    setWinEventHook('setWinEventHookMinimizeStart', hwnd, callback);
   }
 
-  static setWinEventHookMinimizeEnd(callback) {
-    setWinEventHook('setWinEventHookMinimizeEnd', callback);
+  static setWinEventHookMinimizeEnd(hwnd, callback) {
+    setWinEventHook('setWinEventHookMinimizeEnd', hwnd, callback);
   }
 
-  static setWinEventHookForeground(callback) {
-    setWinEventHook('setWinEventHookForeground', callback);
+  static setWinEventHookForeground(hwnd, callback) {
+    setWinEventHook('setWinEventHookForeground', hwnd, callback);
   }
 
-  static initAutomation(hwnd, callback) {
-    return addon.initAutomation(hwnd, callback);
+  static initContactListAutomation(hwnd, callback) {
+    return addon.initContactListAutomation(hwnd, callback);
   }
 
   static getContactListItemInfos(hwnd) {

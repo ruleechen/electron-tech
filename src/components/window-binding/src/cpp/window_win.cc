@@ -30,6 +30,24 @@ namespace window_win {
     return str;
   }
 
+  HWND getHwndArg(const Nan::FunctionCallbackInfo<v8::Value>& args, int index) {
+    v8::String::Utf8Value arg(args[index]);
+    auto strHwnd = std::string(*arg);
+    if (hwndMap.count(strHwnd) > 0) {
+      auto hwnd = hwndMap[strHwnd];
+      return hwnd;
+    } else {
+      return NULL;
+    }
+  }
+
+  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> getCallbackArg(const Nan::FunctionCallbackInfo<v8::Value>& args, int index) {
+    auto isolate = args.GetIsolate();
+    auto arg = v8::Handle<v8::Function>::Cast(args[index]);
+    v8::Persistent<v8::Function> callback(isolate, arg);
+    return callback;
+  }
+
   void out_findWindowHwnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
     std::string className;
@@ -61,12 +79,10 @@ namespace window_win {
 
   void out_allowSetForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // query
     bool queried = false;
     DWORD processId;
-    auto hwnd = hwndMap[strHwnd];
     if (hwnd) {
       GetWindowThreadProcessId(hwnd, &processId);
       queried = true;
@@ -85,9 +101,7 @@ namespace window_win {
 
   void out_setAlwaysOnTop(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
-    auto hwnd = hwndMap[strHwnd];
+    auto hwnd = getHwndArg(args, 0);
     // argument 1
     bool onTop = args[1]->BooleanValue();
     // apply
@@ -104,10 +118,8 @@ namespace window_win {
 
   void out_bringWindowToTop(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // apply
-    auto hwnd = hwndMap[strHwnd];
     auto setted = BringWindowToTop(hwnd);
     // return
     auto ret = (setted == TRUE);
@@ -119,10 +131,8 @@ namespace window_win {
 
   void out_setForegroundWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // apply
-    auto hwnd = hwndMap[strHwnd];
     auto setted = SetForegroundWindow(hwnd);
     // return
     auto ret = (setted == TRUE);
@@ -131,15 +141,13 @@ namespace window_win {
 
   void out_getWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // get rect
     int left = 0;
     int top = 0;
     int right = 0;
     int bottom = 0;
     RECT rect = { NULL };
-    auto hwnd = hwndMap[strHwnd];
     if (GetWindowRect(hwnd, &rect)) {
       left = rect.left;
       top = rect.top;
@@ -158,9 +166,7 @@ namespace window_win {
 
   void out_setWindowRect(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument hwnd
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
-    auto hwnd = hwndMap[strHwnd];
+    auto hwnd = getHwndArg(args, 0);
     // argument rect
     auto left = args[1]->Int32Value();
     auto top = args[3]->Int32Value();
@@ -182,10 +188,8 @@ namespace window_win {
 
   void out_isWindowVisible(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // get
-    auto hwnd = hwndMap[strHwnd];
     auto visible = IsWindowVisible(hwnd);
     // return
     auto ret = (visible == TRUE);
@@ -194,10 +198,8 @@ namespace window_win {
 
   void out_showWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // get
-    auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_SHOWNORMAL);
     // return
     auto ret = (showed == TRUE);
@@ -206,10 +208,8 @@ namespace window_win {
 
   void out_hideWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // get
-    auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_HIDE);
     // return
     auto ret = (showed == TRUE);
@@ -218,10 +218,8 @@ namespace window_win {
 
   void out_isWindowMinimized(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // get
-    auto hwnd = hwndMap[strHwnd];
     auto minimized = IsIconic(hwnd);
     // return
     auto ret = (minimized == TRUE);
@@ -230,10 +228,8 @@ namespace window_win {
 
   void out_minimizeWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // get
-    auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_MINIMIZE);
     // return
     auto ret = (showed == TRUE);
@@ -242,10 +238,8 @@ namespace window_win {
 
   void out_restoreWindow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
+    auto hwnd = getHwndArg(args, 0);
     // get
-    auto hwnd = hwndMap[strHwnd];
     auto showed = ShowWindow(hwnd, SW_RESTORE);
     // return
     auto ret = (showed == TRUE);
@@ -256,10 +250,7 @@ namespace window_win {
     if (callbackMap.count(eventType) == 0) {
       return;
     }
-    std::string strHwnd = converHwndToString(hwnd);
-    // if (hwndMap.count(strHwnd) == 0) {
-    //   return;
-    // }
+    auto strHwnd = converHwndToString(hwnd);
     auto isolate = v8::Isolate::GetCurrent();
     auto function = callbackMap[eventType];
     auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
@@ -272,12 +263,19 @@ namespace window_win {
   }
 
   // https://msdn.microsoft.com/en-us/library/windows/desktop/dd318066(v=vs.85).aspx
-  void WrapSetWinEventHook(DWORD eventType, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
+  void WrapSetWinEventHook(DWORD eventType, HWND hwnd, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
     if (hookMap.count(eventType) > 0) {
       return;
     }
     callbackMap[eventType] = callback;
-    HWINEVENTHOOK hook = SetWinEventHook(eventType, eventType, NULL, WrapWinEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    HWINEVENTHOOK hook;
+    if (hwnd != NULL) {
+      DWORD dwProcessId;
+      DWORD dwThreadId = GetWindowThreadProcessId(hwnd, &dwProcessId);
+      hook = SetWinEventHook(eventType, eventType, NULL, WrapWinEventProc, dwProcessId, dwThreadId, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    } else {
+      hook = SetWinEventHook(eventType, eventType, NULL, WrapWinEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+    }
     hookMap[eventType] = hook;
   }
 
@@ -290,71 +288,74 @@ namespace window_win {
     callbackMap.clear();
   }
 
-  v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> GetCallback(const Nan::FunctionCallbackInfo<v8::Value>& args, int index) {
-    auto isolate = args.GetIsolate();
-    auto arg = v8::Handle<v8::Function>::Cast(args[index]);
-    v8::Persistent<v8::Function> callback(isolate, arg);
-    return callback;
-  }
-
   void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     WrapUnhookWinEvent();
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectCreate(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_CREATE;
-    WrapSetWinEventHook(eventType, callback);
+    WrapSetWinEventHook(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectDestroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_DESTROY;
-    WrapSetWinEventHook(eventType, callback);
+    WrapSetWinEventHook(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectHide(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_HIDE;
-    WrapSetWinEventHook(eventType, callback);
+    WrapSetWinEventHook(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookObjectShow(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_SHOW;
-    WrapSetWinEventHook(eventType, callback);
+    WrapSetWinEventHook(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookLocationChange(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_LOCATIONCHANGE;
-    WrapSetWinEventHook(eventType, callback);
+    WrapSetWinEventHook(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookMinimizeStart(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_SYSTEM_MINIMIZESTART;
-    WrapSetWinEventHook(eventType, callback);
+    WrapSetWinEventHook(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookMinimizeEnd(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_SYSTEM_MINIMIZEEND;
-    WrapSetWinEventHook(eventType, callback);
+    WrapSetWinEventHook(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
   void out_setWinEventHookForeground(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    auto callback = GetCallback(args, 0);
-    auto eventType = EVENT_SYSTEM_FOREGROUND;
-    WrapSetWinEventHook(eventType, callback);
+    auto hwnd = getHwndArg(args, 0);
+    auto callback = getCallbackArg(args, 1);
+    auto eventType1 = EVENT_SYSTEM_FOREGROUND;
+    WrapSetWinEventHook(eventType1, hwnd, callback);
+    auto eventType2 = EVENT_SYSTEM_CAPTURESTART;
+    WrapSetWinEventHook(eventType2, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -547,13 +548,11 @@ namespace window_win {
     return char_array;
   }
 
-  void out_initAutomation(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+  void out_initContactListAutomation(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
-    auto hwnd = hwndMap[strHwnd];
+    auto hwnd = getHwndArg(args, 0);
     // argument 1
-    auto callback = GetCallback(args, 1);
+    auto callback = getCallbackArg(args, 1);
     // create automation
     if (!automation) {
       CoCreateInstance(CLSID_CUIAutomation, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&automation));
@@ -577,6 +576,7 @@ namespace window_win {
         automation->AddAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
         automation->RemoveAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, eventHandler);
         automation->AddAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
+        WrapSetWinEventHook(EVENT_OBJECT_STATECHANGE, hwnd, callback);
         inited = true;
         std::cout << "automation inited" << std::endl;
       }
@@ -587,9 +587,7 @@ namespace window_win {
 
   void out_getContactListItemInfos(const Nan::FunctionCallbackInfo<v8::Value>& args) {
     // argument 0
-    v8::String::Utf8Value arg0(args[0]);
-    auto strHwnd = std::string(*arg0);
-    auto hwnd = hwndMap[strHwnd];
+    auto hwnd = getHwndArg(args, 0);
     // check
     auto infos = Nan::New<v8::Array>(0);
     if (automation) {
@@ -712,7 +710,7 @@ namespace window_win {
     exports->Set(Nan::New("setWinEventHookMinimizeEnd").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookMinimizeEnd)->GetFunction());
     exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
     // automation
-    exports->Set(Nan::New("initAutomation").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_initAutomation)->GetFunction());
+    exports->Set(Nan::New("initContactListAutomation").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_initContactListAutomation)->GetFunction());
     exports->Set(Nan::New("getContactListItemInfos").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getContactListItemInfos)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());

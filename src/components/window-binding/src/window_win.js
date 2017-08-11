@@ -42,8 +42,8 @@ class SfbWindow extends EventEmitter {
         }
       };
       setInterval(cb, 512);
-      Addon.setWinEventHookObjectCreate(cb);
-      Addon.setWinEventHookObjectDestroy(cb);
+      Addon.setWinEventHookObjectCreate(null, cb);
+      Addon.setWinEventHookObjectDestroy(null, cb);
     });
   }
 
@@ -93,33 +93,33 @@ class SfbWindow extends EventEmitter {
   }
 
   hook() {
-    Addon.setWinEventHookObjectShow((windowId) => {
+    Addon.setWinEventHookObjectShow(this.windowId, (windowId) => {
       if (windowId === this.windowId) {
         this.emit('show');
       }
     });
-    Addon.setWinEventHookObjectHide((windowId) => {
+    Addon.setWinEventHookObjectHide(this.windowId, (windowId) => {
       if (windowId === this.windowId) {
         this.emit('hide');
       }
     });
-    Addon.setWinEventHookMinimizeStart((windowId) => {
+    Addon.setWinEventHookMinimizeStart(this.windowId, (windowId) => {
       if (windowId === this.windowId) {
         this.emit('minimize-start');
       }
     });
-    Addon.setWinEventHookMinimizeEnd((windowId) => {
+    Addon.setWinEventHookMinimizeEnd(this.windowId, (windowId) => {
       if (windowId === this.windowId) {
         this.emit('restore-start');
       }
     });
-    Addon.setWinEventHookLocationChange((windowId) => {
+    Addon.setWinEventHookLocationChange(null, (windowId) => {
       if (windowId === this.windowId) {
         const rect = this.getRect();
         this.emit('move', rect);
       }
     });
-    Addon.setWinEventHookForeground((windowId) => {
+    Addon.setWinEventHookForeground(null, (windowId) => {
       if (windowId !== this.windowId) {
         return;
       }
@@ -220,7 +220,7 @@ class RcWindow extends EventEmitter {
     this.browserWindow.on('restore', this.restoreHandler = () => {
       this.emit('restore-start');
     });
-    Addon.setWinEventHookForeground((windowId) => {
+    Addon.setWinEventHookForeground(null, (windowId) => {
       if (windowId !== this.windowId) {
         return;
       }

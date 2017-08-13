@@ -204,8 +204,18 @@ ipc.on('async-message', (event, arg) => {
 });
 
 const buttons = [];
-const showButtons = (itemInfos) => {
-  // TODO:
+const createShowButtonsFunc = (sfbHwnd) => {
+  const addon = WindowBinding.Core.Addon;
+  let timeoutId;
+  const syncButtons = () => {
+    const infos = addon.getContactListItemInfos(sfbHwnd);
+    const infosJson = JSON.stringify(infos);
+    console.log(`rects: ${infosJson}`);
+  };
+  return () => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(syncButtons, 0);
+  };
 };
 
 ipc.on('sync-message', (event, arg) => {
@@ -233,19 +243,14 @@ ipc.on('sync-message', (event, arg) => {
       className: 'NetUIListViewItem',
       windowName: null,
     });
+    const showButtons = createShowButtonsFunc(sfbHwnd);
+    showButtons();
     addon.initContactListAutomation(sfbHwnd, () => {
-      const infos = addon.getContactListItemInfos(sfbHwnd);
-      showButtons(infos);
-      const infosJson = JSON.stringify(infos);
-      console.log(`rects sub: ${infosJson}`);
+      showButtons();
     });
-    const itemInfos = addon.getContactListItemInfos(sfbHwnd);
-    showButtons(itemInfos);
-    const itemInfosJson = JSON.stringify(itemInfos);
     console.log(`found: ${dd2}`);
     console.log(`rcHwnd: ${rcHwnd}`);
     console.log(`sfbHwnd: ${sfbHwnd}`);
-    console.log(`rects: ${itemInfosJson}`);
   }
   if (WindowBinding.isMacOS) {
     const windowId = addon.findWindowId({

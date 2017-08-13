@@ -6,22 +6,22 @@
 #include <string>
 #include <iostream>
 #include <sstream>
-#include <map>
+#include <map> // http://en.cppreference.com/w/cpp/container/map
+#include <list> // http://en.cppreference.com/w/cpp/container/list
+#include <tuple> // http://en.cppreference.com/w/cpp/utility/pair/pair
+#include <vector> // http://en.cppreference.com/w/cpp/container/vector
 #include <windows.h>
 #include <winuser.h>
-// #include <UIAutomation.h>
+#include <UIAutomation.h>
 #include <UIAutomationClient.h>
 #include <comdef.h>
 // #include <OleAcc.h>
-// #include <vector>
 // #include <oleauto.h>
 // #include <cassert>
 
 namespace window_win {
 
   std::map<std::string, HWND> hwndMap;
-  std::map<DWORD, HWINEVENTHOOK> hookMap;
-  std::map<DWORD, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>> callbackMap;
 
   std::string converHwndToString(HWND hwnd) {
     std::stringstream ss;
@@ -31,6 +31,9 @@ namespace window_win {
   }
 
   HWND getHwndArg(const Nan::FunctionCallbackInfo<v8::Value>& args, int index) {
+    if (args[index]->IsUndefined() || args[index]->IsNull()) {
+      return NULL;
+    }
     v8::String::Utf8Value arg(args[index]);
     auto strHwnd = std::string(*arg);
     if (hwndMap.count(strHwnd) > 0) {
@@ -246,50 +249,91 @@ namespace window_win {
     args.GetReturnValue().Set(Nan::New(ret));
   }
 
-  void CALLBACK WrapWinEventProc(HWINEVENTHOOK hWinEventHook, DWORD eventType, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
-    if (callbackMap.count(eventType) == 0) {
-      return;
-    }
-    auto strHwnd = converHwndToString(hwnd);
+  /****************************************** events start ************************************************/
+
+  std::map<DWORD, std::list<std::pair<HWND, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>>>> persistentMapNoHwnd;
+  std::map<DWORD, std::list<std::pair<HWND, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>>>> persistentMapWithHwnd;
+  std::map<DWORD, std::list<HWINEVENTHOOK>> hookMapNoHwnd;
+  std::map<DWORD, std::list<HWINEVENTHOOK>> hookMapWithHwnd;
+
+  void CALLBACK winEventProcNoHwnd(HWINEVENTHOOK hWinEventHook, DWORD eventType, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
     auto isolate = v8::Isolate::GetCurrent();
-    auto function = callbackMap[eventType];
-    auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
-    Nan::Callback callback(funcLocal);
-    const unsigned argc = 1;
-    v8::Local<v8::Value> argv[argc] = {
-      Nan::New(strHwnd).ToLocalChecked()
-    };
-    callback.Call(argc, argv);
+    auto strHwnd = converHwndToString(hwnd);
+    auto persistents = persistentMapNoHwnd[eventType];
+    for (auto item : persistents) {
+      auto function = item.second;
+      auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
+      Nan::Callback callback(funcLocal);
+      const unsigned argc = 1;
+      v8::Local<v8::Value> argv[argc] = {
+        Nan::New(strHwnd).ToLocalChecked()
+      };
+      callback.Call(argc, argv);
+    }
+  }
+
+  void CALLBACK winEventProcWithHwnd(HWINEVENTHOOK hWinEventHook, DWORD eventType, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+    auto isolate = v8::Isolate::GetCurrent();
+    auto strHwnd = converHwndToString(hwnd);
+    auto persistents = persistentMapWithHwnd[eventType];
+    for (auto item : persistents) {
+      if (item.first != hwnd) {
+        continue;
+      }
+      auto function = item.second;
+      auto funcLocal = v8::Local<v8::Function>::New(isolate, function);
+      Nan::Callback callback(funcLocal);
+      const unsigned argc = 1;
+      v8::Local<v8::Value> argv[argc] = {
+        Nan::New(strHwnd).ToLocalChecked()
+      };
+      callback.Call(argc, argv);
+    }
   }
 
   // https://msdn.microsoft.com/en-us/library/windows/desktop/dd318066(v=vs.85).aspx
-  void WrapSetWinEventHook(DWORD eventType, HWND hwnd, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
-    if (hookMap.count(eventType) > 0) {
-      return;
-    }
-    callbackMap[eventType] = callback;
-    HWINEVENTHOOK hook;
-    if (hwnd != NULL) {
+  void setWinEventHookWrap(DWORD eventType, HWND hwnd, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
+    // cache
+    std::pair<HWND, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>> p(hwnd, callback);
+    // register
+    if (hwnd == NULL) {
+      std::cout << "setWinEventHook hwnd: NULL" << std::endl;
+      persistentMapNoHwnd[eventType].push_back(p);
+      if (hookMapNoHwnd.count(eventType) > 0) { return; } // check hook
+      HWINEVENTHOOK hook = SetWinEventHook(eventType, eventType, NULL, winEventProcNoHwnd, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+      hookMapNoHwnd[eventType].push_back(hook);
+    } else {
+      std::cout << "setWinEventHook hwnd: " << hwnd << std::endl;
+      persistentMapWithHwnd[eventType].push_back(p);
+      if (hookMapWithHwnd.count(eventType) > 0) { return; } // check hook
       DWORD dwProcessId;
       DWORD dwThreadId = GetWindowThreadProcessId(hwnd, &dwProcessId);
-      hook = SetWinEventHook(eventType, eventType, NULL, WrapWinEventProc, dwProcessId, dwThreadId, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
-    } else {
-      hook = SetWinEventHook(eventType, eventType, NULL, WrapWinEventProc, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+      HWINEVENTHOOK hook = SetWinEventHook(eventType, eventType, NULL, winEventProcWithHwnd, dwProcessId, dwThreadId, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
+      hookMapWithHwnd[eventType].push_back(hook);
     }
-    hookMap[eventType] = hook;
   }
 
-  void WrapUnhookWinEvent() {
-    for(auto const &ent : hookMap) {
-      auto const &value = ent.second;
-      UnhookWinEvent(value);
+  void unhookWinEventWrap() {
+    for(auto const &ent : hookMapNoHwnd) {
+      auto const &hooks = ent.second;
+      for (auto hook : hooks) {
+        UnhookWinEvent(hook);
+      }
     }
-    hookMap.clear();
-    callbackMap.clear();
+    for(auto const &ent : hookMapWithHwnd) {
+      auto const &hooks = ent.second;
+      for (auto hook : hooks) {
+        UnhookWinEvent(hook);
+      }
+    }
+    hookMapNoHwnd.clear();
+    hookMapWithHwnd.clear();
+    persistentMapNoHwnd.clear();
+    persistentMapWithHwnd.clear();
   }
 
   void out_unhookWinEvents(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    WrapUnhookWinEvent();
+    unhookWinEventWrap();
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -297,7 +341,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_CREATE;
-    WrapSetWinEventHook(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -305,7 +349,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_DESTROY;
-    WrapSetWinEventHook(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -313,7 +357,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_HIDE;
-    WrapSetWinEventHook(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -321,7 +365,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_SHOW;
-    WrapSetWinEventHook(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -329,7 +373,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_LOCATIONCHANGE;
-    WrapSetWinEventHook(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -337,7 +381,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_SYSTEM_MINIMIZESTART;
-    WrapSetWinEventHook(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -345,7 +389,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_SYSTEM_MINIMIZEEND;
-    WrapSetWinEventHook(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -353,11 +397,13 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType1 = EVENT_SYSTEM_FOREGROUND;
-    WrapSetWinEventHook(eventType1, hwnd, callback);
+    setWinEventHookWrap(eventType1, hwnd, callback);
     auto eventType2 = EVENT_SYSTEM_CAPTURESTART;
-    WrapSetWinEventHook(eventType2, hwnd, callback);
+    setWinEventHookWrap(eventType2, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
+
+  /****************************************** events end ************************************************/
 
   /****************************************** automation start ************************************************/
 
@@ -428,22 +474,42 @@ namespace window_win {
   IUIAutomation* automation = nullptr;
   CustomAutomationEventHandler* eventHandler = nullptr;
 
+  std::string bstr2str(BSTR source){
+    //source = L"lol2inside";
+    _bstr_t wrapped_bstr = _bstr_t(source);
+    int length = wrapped_bstr.length();
+    char* char_array = new char[length];
+    strcpy_s(char_array, length+1, wrapped_bstr);
+    return char_array;
+  }
+
+  BSTR str2bstr(std::string str) {
+    std::wstring stemp = std::wstring(str.begin(), str.end());
+    auto ret = SysAllocString(stemp.c_str());
+    return ret;
+  }
+
+  int getElementArrayLength(IUIAutomationElementArray* elements) {
+    if (elements) {
+      int length = 0;
+      if (SUCCEEDED(elements->get_Length(&length)))
+        return length;
+    }
+    return 0;
+  }
+
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
   IUIAutomationCondition* BuildListViewCondition() {
     // ClassName
-    std::string className = "NetUIVirtualListView";
-    std::wstring classNameStemp = std::wstring(className.begin(), className.end());
     VARIANT classNameProperty;
     classNameProperty.vt = VT_BSTR;
-    classNameProperty.bstrVal = SysAllocString(classNameStemp.c_str());
+    classNameProperty.bstrVal = str2bstr("NetUIVirtualListView");
     IUIAutomationCondition* classNamecondition = nullptr;
     automation->CreatePropertyCondition(UIA_ClassNamePropertyId, classNameProperty, &classNamecondition);
     // AutomationId
-    std::string automationId = "idVirtualList";
-    std::wstring automationIdStemp = std::wstring(automationId.begin(), automationId.end());
     VARIANT automationIdProperty;
     automationIdProperty.vt = VT_BSTR;
-    automationIdProperty.bstrVal = SysAllocString(automationIdStemp.c_str());
+    automationIdProperty.bstrVal = str2bstr("idVirtualList");
     IUIAutomationCondition* automationIdcondition = nullptr;
     automation->CreatePropertyCondition(UIA_AutomationIdPropertyId, automationIdProperty, &automationIdcondition);
     // collect
@@ -468,11 +534,9 @@ namespace window_win {
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
   IUIAutomationCondition* BuildListItemCondition() {
     // ClassName
-    std::string className = "NetUIListViewItem";
-    std::wstring classNameStemp = std::wstring(className.begin(), className.end());
     VARIANT classNameProperty;
     classNameProperty.vt = VT_BSTR;
-    classNameProperty.bstrVal = SysAllocString(classNameStemp.c_str());
+    classNameProperty.bstrVal = str2bstr("NetUIListViewItem");
     IUIAutomationCondition* classNamecondition = nullptr;
     automation->CreatePropertyCondition(UIA_ClassNamePropertyId, classNameProperty, &classNamecondition);
     // collect
@@ -496,19 +560,15 @@ namespace window_win {
   // https://msdn.microsoft.com/en-us/library/windows/desktop/ee684017(v=vs.85).aspx
   IUIAutomationCondition* BuildContactNameCondition() {
     // ClassName
-    std::string className = "NetUISimpleButton";
-    std::wstring classNameStemp = std::wstring(className.begin(), className.end());
     VARIANT classNameProperty;
     classNameProperty.vt = VT_BSTR;
-    classNameProperty.bstrVal = SysAllocString(classNameStemp.c_str());
+    classNameProperty.bstrVal = str2bstr("NetUISimpleButton");
     IUIAutomationCondition* classNamecondition = nullptr;
     automation->CreatePropertyCondition(UIA_ClassNamePropertyId, classNameProperty, &classNamecondition);
     // AutomationId
-    std::string automationId = "idContactName";
-    std::wstring automationIdStemp = std::wstring(automationId.begin(), automationId.end());
     VARIANT automationIdProperty;
     automationIdProperty.vt = VT_BSTR;
-    automationIdProperty.bstrVal = SysAllocString(automationIdStemp.c_str());
+    automationIdProperty.bstrVal = str2bstr("idContactName");
     IUIAutomationCondition* automationIdcondition = nullptr;
     automation->CreatePropertyCondition(UIA_AutomationIdPropertyId, automationIdProperty, &automationIdcondition);
     // collect
@@ -528,24 +588,6 @@ namespace window_win {
     }
     // ret
     return condition;
-  }
-
-  int GetElementArrayLength(IUIAutomationElementArray* elements) {
-    if (elements) {
-      int length = 0;
-      if (SUCCEEDED(elements->get_Length(&length)))
-        return length;
-    }
-    return 0;
-  }
-
-  std::string bstr_to_str(BSTR source){
-    //source = L"lol2inside";
-    _bstr_t wrapped_bstr = _bstr_t(source);
-    int length = wrapped_bstr.length();
-    char* char_array = new char[length];
-    strcpy_s(char_array, length+1, wrapped_bstr);
-    return char_array;
   }
 
   void out_initContactListAutomation(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -576,7 +618,7 @@ namespace window_win {
         automation->AddAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
         automation->RemoveAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, eventHandler);
         automation->AddAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
-        WrapSetWinEventHook(EVENT_OBJECT_STATECHANGE, hwnd, callback);
+        setWinEventHookWrap(EVENT_OBJECT_STATECHANGE, hwnd, callback);
         inited = true;
         std::cout << "automation inited" << std::endl;
       }
@@ -603,7 +645,7 @@ namespace window_win {
         listItemCondition->Release();
         if (hr == S_OK && listItems) {
           // items length
-          auto length = GetElementArrayLength(listItems);
+          auto length = getElementArrayLength(listItems);
           std::cout << "list items: " << length << std::endl;
           // extract infos
           auto isolate = args.GetIsolate();
@@ -644,6 +686,17 @@ namespace window_win {
     args.GetReturnValue().Set(infos);
   }
 
+  void destroyAutomation() {
+    if (automation) {
+      automation->Release();
+      automation = nullptr;
+    }
+    if (eventHandler) {
+      eventHandler->Release();
+      eventHandler = nullptr;
+    }
+  }
+
   /****************************************** automation end ************************************************/
 
   void out_helloWorld(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -671,16 +724,9 @@ namespace window_win {
   }
 
   void out_destroy(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-    WrapUnhookWinEvent();
+    unhookWinEventWrap();
+    destroyAutomation();
     hwndMap.clear();
-    if (automation) {
-      automation->Release();
-      automation = nullptr;
-    }
-    if (eventHandler) {
-      eventHandler->Release();
-      eventHandler = nullptr;
-    }
     std::cout << "destroy done" << std::endl;
   }
 

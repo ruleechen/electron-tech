@@ -618,7 +618,7 @@ namespace window_win {
         automation->AddAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
         automation->RemoveAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, eventHandler);
         automation->AddAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
-        setWinEventHookWrap(EVENT_OBJECT_STATECHANGE, hwnd, callback);
+        setWinEventHookWrap(EVENT_OBJECT_STATECHANGE, NULL, callback); // TODO: make narrower
         inited = true;
         std::cout << "automation inited" << std::endl;
       }
@@ -661,10 +661,10 @@ namespace window_win {
             hr = item->FindFirst(TreeScope_Descendants, contactNameCondition, &contactNameElement);
             // get item name
             if (hr == S_OK && contactNameElement) {
-              BSTR bname;
-              if (contactNameElement->get_CurrentName(&bname) == S_OK) {
-                std::string name = _bstr_t(bname);
-                obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
+              BSTR bstrContactName;
+              if (contactNameElement->get_CurrentName(&bstrContactName) == S_OK) {
+                std::string contactName = _bstr_t(bstrContactName);
+                obj->Set(Nan::New("contactName").ToLocalChecked(), Nan::New(contactName).ToLocalChecked());
               }
             }
             // get rects

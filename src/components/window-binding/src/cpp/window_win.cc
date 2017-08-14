@@ -656,10 +656,16 @@ namespace window_win {
             // get item
             IUIAutomationElement* item = nullptr;
             listItems->GetElement(index, &item);
-            // find contact name
+            // get name
+            BSTR bstrName;
+            if (item->get_CurrentName(&bstrName) == S_OK) {
+              std::string name = _bstr_t(bstrName);
+              obj->Set(Nan::New("name").ToLocalChecked(), Nan::New(name).ToLocalChecked());
+            }
+            // find contact name element
             IUIAutomationElement* contactNameElement = nullptr;
             hr = item->FindFirst(TreeScope_Descendants, contactNameCondition, &contactNameElement);
-            // get item name
+            // get contact name
             if (hr == S_OK && contactNameElement) {
               BSTR bstrContactName;
               if (contactNameElement->get_CurrentName(&bstrContactName) == S_OK) {

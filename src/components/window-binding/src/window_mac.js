@@ -227,24 +227,29 @@ class RcWindow extends EventEmitter {
 class MacWindow extends Window {
   constructor({ browserWindow }) {
     super();
-
     this.rcWindow = new RcWindow({ browserWindow });
     this.sfbWindow = new SfbWindow();
+  }
 
-    const syncWithSfbPosition = (sfbRect) => {
-      const rect = sfbRect || this.sfbWindow.getRect();
-      if (rect) {
-        this.rcWindow.setRect({
-          left: rect.left,
-          right: rect.right,
-          top: rect.bottom,
-          bottom: rect.bottom + 100,
-        });
-      }
-    };
+  static get Addon() {
+    return Addon;
+  }
 
+  syncWithSfbPosition(sfbRect) {
+    const rect = sfbRect || this.sfbWindow.getRect();
+    if (rect) {
+      this.rcWindow.setRect({
+        left: rect.left,
+        right: rect.right,
+        top: rect.bottom,
+        bottom: rect.bottom + 100,
+      });
+    }
+  }
+
+  onSfbInited() {
     this.sfbWindow.on('foreground', (windowId) => {
-      syncWithSfbPosition();
+      this.syncWithSfbPosition();
       if (windowId === this.sfbWindow.windowId) {
         if (this.rcWindow.isMinimized()) {
           this.rcWindow.restore();
@@ -257,34 +262,39 @@ class MacWindow extends Window {
     });
 
     this.sfbWindow.on('move', (rect) => {
-      syncWithSfbPosition(rect);
-    });
-
-    this.sfbWindow.on('inited', () => {
-      this.sfbWindow.show();
-      this.sfbWindow.bringToTop();
-      this.rcWindow.show();
-      syncWithSfbPosition();
-    });
-
-    this.sfbWindow.on('losed', () => {
-      this.sfbWindow.hide();
+      this.syncWithSfbPosition(rect);
     });
   }
 
-  static get Addon() {
-    return Addon;
+  onSfbLost() {
+    this.sfbWindow.hide();
   }
 
   bind() {
-    this.rcWindow.hook();
-    this.sfbWindow.hook();
+    this.sfbWindow.on('inited', () => {
+      this.rcWindow.hook();
+      this.sfbWindow.hook();
+      this.onSfbInited();
+      this.sfbWindow.show();
+      this.sfbWindow.bringToTop();
+      this.rcWindow.show();
+      this.syncWithSfbPosition();
+    });
+
+    this.sfbWindow.on('losed', () => {
+      this.rcWindow.unhook();
+      this.sfbWindow.unhook();
+      this.onSfbLost();
+    });
+
+    return this;
   }
 
   unbind() {
     this.rcWindow.unhook();
     this.sfbWindow.unhook();
     Addon.destroy();
+    return this;
   }
 }
 

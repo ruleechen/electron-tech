@@ -39,12 +39,7 @@ class AddonClass {
 
   static getWindowRect(hwnd) {
     const rect = addon.getWindowRect(hwnd);
-    const isEmpty =
-      (rect.left === 0) &&
-      (rect.top === 0) &&
-      (rect.right === 0) &&
-      (rect.bottom === 0);
-    return isEmpty ? null : rect;
+    return Object.keys(rect).length > 0 ? rect : null;
   }
 
   static setWindowRect(hwnd, left, top, right, bottom) {
@@ -122,6 +117,11 @@ class AddonClass {
 
   static initContactListAutomation(hwnd, callback) {
     return addon.initContactListAutomation(hwnd, callback);
+  }
+
+  static getContactListViewInfo(hwnd) {
+    const info = addon.getContactListViewInfo(hwnd);
+    return Object.keys(info).length > 0 ? info : null;
   }
 
   static getContactListItemInfos(hwnd) {

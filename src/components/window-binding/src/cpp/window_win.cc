@@ -146,24 +146,16 @@ namespace window_win {
     // argument 0
     auto hwnd = getHwndArg(args, 0);
     // get rect
-    int left = 0;
-    int top = 0;
-    int right = 0;
-    int bottom = 0;
-    RECT rect = { NULL };
-    if (GetWindowRect(hwnd, &rect)) {
-      left = rect.left;
-      top = rect.top;
-      right = rect.right;
-      bottom = rect.bottom;
-    }
-    // return rect
     auto isolate = args.GetIsolate();
     auto obj = v8::Object::New(isolate);
-    obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(left));
-    obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(top));
-    obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(right));
-    obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(bottom));
+    RECT rect = { NULL };
+    if (GetWindowRect(hwnd, &rect)) {
+      obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
+      obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
+      obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
+      obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(rect.bottom));
+    }
+    // return rect
     args.GetReturnValue().Set(obj);
   }
 

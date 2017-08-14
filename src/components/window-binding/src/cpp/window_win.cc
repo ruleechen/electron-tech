@@ -277,7 +277,7 @@ namespace window_win {
     auto strHwnd = converHwndToString(hwnd);
     auto persistents = persistentMapWithHwnd[eventType];
     for (auto item : persistents) {
-      if (item.first != hwnd) {
+      if (item.first != NULL && item.first != hwnd) {
         continue;
       }
       auto function = item.second;
@@ -292,22 +292,22 @@ namespace window_win {
   }
 
   // https://msdn.microsoft.com/en-us/library/windows/desktop/dd318066(v=vs.85).aspx
-  void setWinEventHookWrap(DWORD eventType, HWND hwnd, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
+  void setWinEventHookWrap(DWORD eventType, HWND eventHwnd, HWND procHwnd, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>> callback) {
     // cache
-    std::pair<HWND, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>> p(hwnd, callback);
+    std::pair<HWND, v8::Persistent<v8::Function, v8::CopyablePersistentTraits<v8::Function>>> p(procHwnd, callback);
     // register
-    if (hwnd == NULL) {
+    if (eventHwnd == NULL) {
       std::cout << "setWinEventHook hwnd: NULL" << std::endl;
       persistentMapNoHwnd[eventType].push_back(p);
       if (hookMapNoHwnd.count(eventType) > 0) { return; } // check hook
       HWINEVENTHOOK hook = SetWinEventHook(eventType, eventType, NULL, winEventProcNoHwnd, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
       hookMapNoHwnd[eventType].push_back(hook);
     } else {
-      std::cout << "setWinEventHook hwnd: " << hwnd << std::endl;
+      std::cout << "setWinEventHook hwnd: " << eventHwnd << std::endl;
       persistentMapWithHwnd[eventType].push_back(p);
       if (hookMapWithHwnd.count(eventType) > 0) { return; } // check hook
       DWORD dwProcessId;
-      DWORD dwThreadId = GetWindowThreadProcessId(hwnd, &dwProcessId);
+      DWORD dwThreadId = GetWindowThreadProcessId(eventHwnd, &dwProcessId);
       HWINEVENTHOOK hook = SetWinEventHook(eventType, eventType, NULL, winEventProcWithHwnd, dwProcessId, dwThreadId, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
       hookMapWithHwnd[eventType].push_back(hook);
     }
@@ -341,7 +341,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_CREATE;
-    setWinEventHookWrap(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -349,7 +349,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_DESTROY;
-    setWinEventHookWrap(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -357,7 +357,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_HIDE;
-    setWinEventHookWrap(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -365,7 +365,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_SHOW;
-    setWinEventHookWrap(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -373,7 +373,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_OBJECT_LOCATIONCHANGE;
-    setWinEventHookWrap(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -381,7 +381,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_SYSTEM_MINIMIZESTART;
-    setWinEventHookWrap(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -389,7 +389,7 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType = EVENT_SYSTEM_MINIMIZEEND;
-    setWinEventHookWrap(eventType, hwnd, callback);
+    setWinEventHookWrap(eventType, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -397,9 +397,9 @@ namespace window_win {
     auto hwnd = getHwndArg(args, 0);
     auto callback = getCallbackArg(args, 1);
     auto eventType1 = EVENT_SYSTEM_FOREGROUND;
-    setWinEventHookWrap(eventType1, hwnd, callback);
+    setWinEventHookWrap(eventType1, hwnd, hwnd, callback);
     auto eventType2 = EVENT_SYSTEM_CAPTURESTART;
-    setWinEventHookWrap(eventType2, hwnd, callback);
+    setWinEventHookWrap(eventType2, hwnd, hwnd, callback);
     args.GetReturnValue().Set(Nan::New(true));
   }
 
@@ -618,13 +618,45 @@ namespace window_win {
         automation->AddAutomationEventHandler(UIA_Invoke_InvokedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
         automation->RemoveAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, eventHandler);
         automation->AddAutomationEventHandler(UIA_StructureChangedEventId, listViewElement, TreeScope_Subtree, NULL, eventHandler);
-        setWinEventHookWrap(EVENT_OBJECT_STATECHANGE, NULL, callback); // TODO: make narrower
+        setWinEventHookWrap(EVENT_OBJECT_STATECHANGE, hwnd, NULL, callback);
         inited = true;
         std::cout << "automation inited" << std::endl;
       }
     }
     // ret
     args.GetReturnValue().Set(inited);
+  }
+
+  void out_getContactListViewInfo(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+    // argument 0
+    auto hwnd = getHwndArg(args, 0);
+    // check
+    auto isolate = args.GetIsolate();
+    auto obj = v8::Object::New(isolate);
+    if (automation) {
+      // get root element
+      IUIAutomationElement* rootElement = nullptr;
+      HRESULT hr = automation->ElementFromHandle(hwnd, &rootElement);
+      if (hr == S_OK && rootElement) {
+        // get list view
+        IUIAutomationElement* listViewElement = nullptr;
+        auto listViewCondition = BuildListViewCondition();
+        hr = rootElement->FindFirst(TreeScope_Descendants, listViewCondition, &listViewElement);
+        listViewCondition->Release();
+        if (hr == S_OK && listViewElement) {
+          // get rects
+          RECT rect;
+          if (listViewElement->get_CurrentBoundingRectangle(&rect) == S_OK) {
+            obj->Set(Nan::New("left").ToLocalChecked(), Nan::New(rect.left));
+            obj->Set(Nan::New("top").ToLocalChecked(), Nan::New(rect.top));
+            obj->Set(Nan::New("right").ToLocalChecked(), Nan::New(rect.right));
+            obj->Set(Nan::New("bottom").ToLocalChecked(), Nan::New(rect.bottom));
+          }
+        }
+      }
+    }
+    // return rect
+    args.GetReturnValue().Set(obj);
   }
 
   void out_getContactListItemInfos(const Nan::FunctionCallbackInfo<v8::Value>& args) {
@@ -763,6 +795,7 @@ namespace window_win {
     exports->Set(Nan::New("setWinEventHookForeground").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_setWinEventHookForeground)->GetFunction());
     // automation
     exports->Set(Nan::New("initContactListAutomation").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_initContactListAutomation)->GetFunction());
+    exports->Set(Nan::New("getContactListViewInfo").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getContactListViewInfo)->GetFunction());
     exports->Set(Nan::New("getContactListItemInfos").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_getContactListItemInfos)->GetFunction());
     // test
     exports->Set(Nan::New("helloWorld").ToLocalChecked(), Nan::New<v8::FunctionTemplate>(out_helloWorld)->GetFunction());

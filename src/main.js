@@ -8,34 +8,32 @@ const BrowserWindow = electron.BrowserWindow;
 
 const path = require('path');
 const url = require('url');
-const WindowBinding = require('./src/components/window-binding');
+const WindowBinding = require('./components/window-binding');
 
 let ConnectNetSdk;
 if (WindowBinding.isWindows) {
-  ConnectNetSdk = require('./src/components/connect-netsdk');
-  ConnectNetSdk.registerEvents({
-    appStateChanged: (args) => {
-      console.log(args);
-    },
-    accountStateChanged: (args) => {
-      console.log(args);
-    },
-    conversationAdded: () => {
-      console.log('conversation added');
-    },
-    conversationRemoved: () => {
-      console.log('conversation removed');
-    },
-  });
+  ConnectNetSdk = require('./components/connect-netsdk');
 }
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
+let sidebarWindow;
 let aboutWindow;
+let cachedSfbHwnd
 
 let mainWindowBinding;
 let appTray;
+let sidebarWindowReadyToSend;
+
+const initWindowBinding = () => {
+  if (mainWindow && sidebarWindow) {
+    mainWindowBinding = new WindowBinding.Core({
+      browserWindow: mainWindow,
+      sidebarWindow,
+    }).bind();
+  }
+};
 
 const createAboutWindow = () => {
   if (aboutWindow) {
@@ -60,7 +58,7 @@ const createAboutWindow = () => {
   aboutWindow.setAlwaysOnTop(true);
 
   aboutWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'src/views/about/index.html'),
+    pathname: path.join(__dirname, 'views/about/index.html'),
     protocol: 'file:',
     slashes: true,
   }));
@@ -90,7 +88,7 @@ const createMainWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, 'src/views/index/index.html'),
+    pathname: path.join(__dirname, 'views/index/index.html'),
     protocol: 'file:',
     slashes: true,
   }));
@@ -102,10 +100,7 @@ const createMainWindow = () => {
     if (WindowBinding.isMacOS) {
       mainWindow.show();
     }
-    mainWindowBinding = new WindowBinding.Core({
-      browserWindow: mainWindow,
-    });
-    mainWindowBinding.bind();
+    initWindowBinding();
   });
 
   // Emitted when the window is closed.
@@ -129,9 +124,12 @@ const createMainWindow = () => {
     }
   });
 
+  // return;
+
   const iconPath = WindowBinding.isWindows ?
     './src/resources/tray-icon/app-win.ico' :
     './src/resources/tray-icon/app-mac.png';
+
   appTray = new electron.Tray(iconPath);
 
   appTray.setToolTip('RingCentral for Skype for Business');
@@ -167,13 +165,144 @@ const createMainWindow = () => {
       appTray.setHighlightMode('never');
     });
   }
+};
+
+const getSidebarRect = () => {
+  const size = sidebarWindow.getSize();
+  const position = sidebarWindow.getPosition();
+  return {
+    left: position[0],
+    top: position[1],
+    right: position[0] + size[0],
+    bottom: position[1] + size[1],
+  };
 }
+
+const syncSidebarRect = (sfbHwnd) => {
+  cachedSfbHwnd = sfbHwnd;
+  const addon = WindowBinding.Core.Addon;
+  const rect = addon.getContactListViewInfo(sfbHwnd || cachedSfbHwnd);
+  if (rect) {
+    sidebarWindow.setPosition(rect.right - 80, rect.top);
+    sidebarWindow.setSize(50, rect.bottom - rect.top);
+  }
+};
+
+const createShowButtonsFunc = (sfbHwnd) => {
+  const addon = WindowBinding.Core.Addon;
+  let timeoutId;
+  const syncButtons = () => {
+    const infos = addon.getContactListItemInfos(sfbHwnd);
+    if (!infos.length) {
+      sidebarWindow.setPosition(-1000, -1000);
+    }
+    if (sidebarWindow) {
+      syncSidebarRect(sfbHwnd);
+      if (sidebarWindowReadyToSend) {
+        const sidebarRect = getSidebarRect();
+        sidebarWindow.webContents.send('sync-buttons', {
+          listItemInfos: infos,
+          sidebarRect,
+        });
+      }
+    }
+  };
+  return () => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(syncButtons, 16);
+  };
+};
+
+const bindAutomation = () => {
+  console.log('bindAutomation');
+  const addon = WindowBinding.Core.Addon;
+  const sfbHwnd = addon.findWindowHwnd({
+    className: 'CommunicatorMainWindowClass',
+    windowName: 'Skype for Business ',
+  });
+  const showButtons = createShowButtonsFunc(sfbHwnd);
+  showButtons();
+  addon.initContactListAutomation(sfbHwnd, () => {
+    showButtons();
+  });
+};
+
+let currentAccountState;
+if (ConnectNetSdk) {
+  ConnectNetSdk.registerEvents({
+    appStateChanged: (args) => {
+      console.log(args);
+    },
+    accountStateChanged: (args) => {
+      console.log(args);
+      currentAccountState = args.AccountState;
+      if (currentAccountState === 'SignedIn') {
+        bindAutomation();
+      }
+    },
+    conversationAdded: () => {
+      console.log('conversation added');
+    },
+    conversationRemoved: () => {
+      console.log('conversation removed');
+    },
+  });
+}
+
+const createSidebarWindow = () => {
+  sidebarWindow = new BrowserWindow({
+    x: 100,
+    y: 100,
+    width: 50,
+    height: 100,
+    show: true,
+    frame: false,
+    movable: true,
+    closable: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    transparent: true,
+  });
+
+  sidebarWindow.setMenu(null);
+  sidebarWindow.setAlwaysOnTop(true);
+
+  setTimeout(() => {
+    sidebarWindow.loadURL(url.format({
+      pathname: path.join(__dirname, 'views/sidebar/index.html'),
+      protocol: 'file:',
+      slashes: true,
+    }));
+  }, 16);
+
+  sidebarWindow.on('closed', () => {
+    sidebarWindow = null;
+  });
+
+  sidebarWindow.once('ready-to-show', () => {
+    if (currentAccountState === 'SignedIn') {
+      sidebarWindow.show();
+    } else {
+      sidebarWindow.hide();
+    }
+    initWindowBinding();
+  });
+
+  sidebarWindow.webContents.on('did-finish-load', () => {
+    sidebarWindowReadyToSend = true;
+
+  })
+};
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   createMainWindow();
+  createSidebarWindow();
 });
 
 // Quit when all windows are closed.
@@ -191,6 +320,9 @@ app.on('activate', () => {
   if (mainWindow === null) {
     createMainWindow();
   }
+  if (sidebarWindow === null) {
+    createSidebarWindow();
+  }
 });
 
 ipc.on('async-message', (event, arg) => {
@@ -202,21 +334,6 @@ ipc.on('async-message', (event, arg) => {
     event.sender.send('async-message-reply', JSON.stringify(err || res));
   });
 });
-
-const buttons = [];
-const createShowButtonsFunc = (sfbHwnd) => {
-  const addon = WindowBinding.Core.Addon;
-  let timeoutId;
-  const syncButtons = () => {
-    const infos = addon.getContactListItemInfos(sfbHwnd);
-    const infosJson = JSON.stringify(infos);
-    console.log(`rects: ${infosJson}`);
-  };
-  return () => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(syncButtons, 0);
-  };
-};
 
 ipc.on('sync-message', (event, arg) => {
   const addon = WindowBinding.Core.Addon;
@@ -242,11 +359,6 @@ ipc.on('sync-message', (event, arg) => {
     const dd2 = addon.findWindowHwnd({
       className: 'NetUIListViewItem',
       windowName: null,
-    });
-    const showButtons = createShowButtonsFunc(sfbHwnd);
-    showButtons();
-    addon.initContactListAutomation(sfbHwnd, () => {
-      showButtons();
     });
     console.log(`found: ${dd2}`);
     console.log(`rcHwnd: ${rcHwnd}`);

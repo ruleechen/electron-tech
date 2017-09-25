@@ -258,16 +258,156 @@ class RcWindow extends EventEmitter {
   }
 }
 
-// class
-class WinWindow extends Window {
+class SidebarWindow extends EventEmitter {
   constructor({ browserWindow }) {
     super();
-    this.rcWindow = new RcWindow({ browserWindow });
+    this.browserWindow = browserWindow;
+    this.windowId = RcWindow.loadWindowId();
+    if (!this.windowId) {
+      throw new Error('"windowId" notfound');
+    }
+    this.inited = (new Date()).getTime();
+  }
+
+  static loadWindowId() {
+    return Addon.findWindowHwnd({
+      className: 'Chrome_WidgetWin_1',
+      windowName: 'RingCentral for Skype for Business Sidebar',
+    });
+  }
+
+  show() {
+    this.browserWindow.show();
+  }
+
+  hide() {
+    // this.browserWindow.hide();
+    this.browserWindow.setPosition(-1000, -1000);
+  }
+
+  isVisible() {
+    return this.browserWindow.isVisible();
+  }
+
+  bringToTop(focus) {
+    this.browserWindow.setAlwaysOnTop(true);
+    if (focus) { this.browserWindow.focus(); }
+    this.browserWindow.setAlwaysOnTop(false);
+  }
+
+  isMinimized() {
+    return this.browserWindow.isMinimized();
+  }
+
+  minimize() {
+    this.browserWindow.minimize();
+  }
+
+  restore() {
+    this.browserWindow.restore();
+  }
+
+  setRect(rect) {
+    this.browserWindow.setPosition(rect.left, rect.top);
+    this.browserWindow.setSize(rect.right - rect.left, rect.bottom - rect.top);
+  }
+
+  getRect() {
+    const size = this.browserWindow.getSize();
+    const position = this.browserWindow.getPosition();
+    return {
+      left: position[0],
+      top: position[1],
+      right: position[0] + size[0],
+      bottom: position[1] + size[1],
+    };
+  }
+
+  hook() {
+    this.browserWindow.on('show', this.showHandler = () => {
+      this.emit('show');
+    });
+    this.browserWindow.on('hide', this.hideHandler = () => {
+      this.emit('hide');
+    });
+    this.browserWindow.on('move', this.moveHandler = () => {
+      const rect = this.getRect();
+      this.emit('move', rect);
+    });
+    this.browserWindow.on('focus', this.focusHandler = () => {
+      if (!freezeForeground()) {
+        this.emit('foreground');
+      }
+    });
+    this.browserWindow.on('minimize', this.minimizeHandler = () => {
+      this.emit('minimize-start');
+    });
+    this.browserWindow.on('restore', this.restoreHandler = () => {
+      this.emit('restore-start');
+    });
+    Addon.setWinEventHookForeground(null, (windowId) => {
+      if (windowId !== this.windowId) {
+        return;
+      }
+      if (!freezeForeground()) {
+        this.emit('foreground');
+      }
+    });
+  }
+
+  unhook() {
+    if (this.showHandler) {
+      this.browserWindow.removeListener('show', this.showHandler);
+      delete this.showHandler;
+    }
+    if (this.hideHandler) {
+      this.browserWindow.removeListener('hide', this.hideHandler);
+      delete this.hideHandler;
+    }
+    if (this.moveHandler) {
+      this.browserWindow.removeListener('move', this.moveHandler);
+      delete this.moveHandler;
+    }
+    if (this.focusHandler) {
+      this.browserWindow.removeListener('focus', this.focusHandler);
+      delete this.focusHandler;
+    }
+    if (this.minimizeHandler) {
+      this.browserWindow.removeListener('minimize', this.minimizeHandler);
+      delete this.minimizeHandler;
+    }
+    if (this.restoreHandler) {
+      this.browserWindow.removeListener('restore', this.restoreHandler);
+      delete this.restoreHandler;
+    }
+  }
+}
+
+// class
+class WinWindow extends Window {
+  constructor({ browserWindow, sidebarWindow }) {
+    super();
     this.sfbWindow = new SfbWindow();
+    this.rcWindow = new RcWindow({ browserWindow });
+    this.sidebarWindow = new SidebarWindow({
+      browserWindow: sidebarWindow,
+    });
   }
 
   static get Addon() {
     return Addon;
+  }
+
+  syncSidebarWithSfbPosition() {
+    const listViewRect = Addon.getContactListViewInfo(this.sfbWindow.windowId);
+    if (listViewRect) {
+      this.sidebarWindow.setRect({
+        left: listViewRect.right - 90,
+        right: listViewRect.right - 50,
+        top: listViewRect.top,
+        bottom: listViewRect.bottom,
+      });
+    }
   }
 
   syncWithSfbPosition(sfbRect) {
@@ -283,14 +423,21 @@ class WinWindow extends Window {
   }
 
   onSfbInited() {
+    this.sfbWindow.removeAllListeners();
+    this.rcWindow.removeAllListeners();
+    this.sidebarWindow.removeAllListeners();
+
     this.sfbWindow.on('show', () => {
       this.rcWindow.show();
+      // this.sidebarWindow.show();
+      this.syncSidebarWithSfbPosition();
     });
     this.sfbWindow.on('hide', () => {
       // right after sfb is hidden --> rc become foreground --> show sfb again
       // so here we need the freezeForeground before hide sfb
       freezeForeground();
       this.rcWindow.hide();
+      this.sidebarWindow.hide();
     });
 
     this.rcWindow.on('minimize-start', () => {
@@ -300,13 +447,17 @@ class WinWindow extends Window {
     });
     this.sfbWindow.on('minimize-start', () => {
       this.rcWindow.minimize();
+      this.sidebarWindow.hide();
     });
     this.sfbWindow.on('restore-start', () => {
       this.rcWindow.restore();
+      // this.sidebarWindow.show();
+      this.syncSidebarWithSfbPosition();
     });
 
     this.rcWindow.on('foreground', () => {
       this.syncWithSfbPosition();
+      this.syncSidebarWithSfbPosition();
       if (this.sfbWindow.isMinimized()) {
         this.sfbWindow.restore();
         return;
@@ -320,6 +471,7 @@ class WinWindow extends Window {
     });
     this.sfbWindow.on('foreground', () => {
       this.syncWithSfbPosition();
+      this.syncSidebarWithSfbPosition();
       if (!this.setForegroundWindowAllowed) {
         // The calling process must already be able to set the foreground window
         // So here we use sfb process to enable the rc electron process
@@ -334,17 +486,32 @@ class WinWindow extends Window {
         this.rcWindow.show();
         return;
       }
+      // this.sidebarWindow.show();
+      this.syncSidebarWithSfbPosition();
       this.rcWindow.bringToTop(false);
       this.sfbWindow.bringToTop();
     });
 
     this.sfbWindow.on('move', (rect) => {
       this.syncWithSfbPosition(rect);
+      this.syncSidebarWithSfbPosition();
+    });
+
+    Addon.setWinEventHookForeground(null, (windowId) => {
+      if (
+        windowId !== this.sfbWindow.windowId &&
+        windowId !== this.rcWindow.windowId &&
+        windowId !== this.sidebarWindow.windowId
+      ) {
+        this.sidebarWindow.hide();
+      }
     });
   }
 
   onSfbLost() {
-    this.sfbWindow.hide();
+    this.sfbWindow.removeAllListeners();
+    this.rcWindow.removeAllListeners();
+    this.rcWindow.hide();
   }
 
   bind() {
@@ -356,6 +523,7 @@ class WinWindow extends Window {
       this.sfbWindow.bringToTop();
       this.rcWindow.show();
       this.syncWithSfbPosition();
+      this.syncSidebarWithSfbPosition();
     });
 
     this.sfbWindow.on('losed', () => {

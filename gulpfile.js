@@ -4,7 +4,7 @@
 
 const gulp = require('gulp');
 const install = require('gulp-install');
-const electronInstaller = require('electron-winstaller');
+const builder = require('electron-builder');
 
 const isWindows = /^win/.test(process.platform);
 
@@ -18,24 +18,42 @@ gulp.task('build-connect-netsdk', () => (
     .pipe(install({ production: true }))
 ));
 
-gulp.task('build-winstaller', (callback) => {
-  electronInstaller.createWindowsInstaller({
-    appDirectory: '/',
-    outputDirectory: '/tmp/build/installer64',
-    authors: 'My App Inc.',
-    exe: 'myapp.exe',
-  }).then(() => {
-    console.log('It worked!');
-    callback();
-  }).catch((ex) => {
-    console.log(`No dice: ${ex.message}`);
-  });
-});
-
 const components = ['build-window-binding'];
 if (isWindows) {
   components.push('build-connect-netsdk');
 }
 
 gulp.task('build', components, () => {
+  builder.build({
+    config: {
+      appId: 'com.ringcentral.sfb',
+      dmg: {
+        contents: [
+          {
+            x: 110,
+            y: 150,
+          },
+          {
+            x: 240,
+            y: 150,
+            type: 'link',
+            path: '/Applications',
+          },
+        ],
+      },
+      linux: {
+        target: [
+          'AppImage',
+          'deb',
+        ],
+      },
+      win: {
+        target: 'Squirrel.Windows',
+      },
+    },
+  }).then(() => {
+    console.log('done');
+  }).catch((error) => {
+    console.error(error);
+  });
 });

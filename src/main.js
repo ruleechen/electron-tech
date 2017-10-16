@@ -127,8 +127,8 @@ const createMainWindow = () => {
   // return;
 
   const iconPath = WindowBinding.isWindows ?
-    './src/resources/tray-icon/app-win.ico' :
-    './src/resources/tray-icon/app-mac.png';
+    `${__dirname}/resources/tray-icon/app-win.ico` :
+    `${__dirname}/resources/tray-icon/app-mac.png`;
 
   appTray = new electron.Tray(iconPath);
 

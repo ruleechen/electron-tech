@@ -6,8 +6,6 @@ const gulp = require('gulp');
 const install = require('gulp-install');
 const builder = require('electron-builder');
 
-const isWindows = /^win/.test(process.platform);
-
 gulp.task('build-window-binding', () => (
   gulp.src('./src/components/window-binding/package.json')
     .pipe(install({ production: true }))
@@ -18,37 +16,45 @@ gulp.task('build-connect-netsdk', () => (
     .pipe(install({ production: true }))
 ));
 
-const components = ['build-window-binding'];
-if (isWindows) {
-  components.push('build-connect-netsdk');
-}
-
-gulp.task('build', components, () => {
+gulp.task('build', ['build-window-binding', 'build-connect-netsdk'], () => {
   builder.build({
+    targets: builder.Platform.WINDOWS.createTarget(),
     config: {
       appId: 'com.ringcentral.sfb',
-      dmg: {
-        contents: [
-          {
-            x: 110,
-            y: 150,
-          },
-          {
-            x: 240,
-            y: 150,
-            type: 'link',
-            path: '/Applications',
-          },
-        ],
-      },
-      linux: {
-        target: [
-          'AppImage',
-          'deb',
-        ],
-      },
+      copyright: 'Copyright © 1999-2017 RingCentral, Inc.',
+      compression: 'normal',
+      extraResources: [
+        'src/components/connect-netsdk/output/**/*',
+      ],
+      dmg: {},
+      linux: {},
       win: {
-        target: 'Squirrel.Windows',
+        // icon: 'build/icon.ico',
+        publisherName: 'RingCentral, Inc.',
+        target: [{
+          target: 'nsis',
+          arch: ['ia32'],
+        }],
+      },
+      nsis: {
+        include: './build/installer.nsh',
+        oneClick: false,
+        allowToChangeInstallationDirectory: true,
+        createDesktopShortcut: true,
+        // shortcutName: '',
+        // displayLanguageSelector: true,
+        // installerLanguages: ['de-DE', 'en-US'],
+        runAfterFinish: true,
+        // installerIcon: '',
+        // license: 'path to EULA',
+        artifactName: '${productName}_${version}_${arch}.${ext}',
+      },
+      // publish: {
+      //   provider: 'generic',
+      //   url: 'https://myDownloadUrl',
+      // },
+      directories: {
+        output: './dist/release',
       },
     },
   }).then(() => {

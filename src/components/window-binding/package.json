@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "install": "node-gyp rebuild --target=1.6.11 --arch=x64 --dist-url=https://atom.io/download/electron"
+    "install": "node-gyp rebuild --target=1.6.11 --arch=ia32 --dist-url=https://atom.io/download/electron"
   },
   "author": "RingCentral Integration Team",
   "license": "UNLICENSED",

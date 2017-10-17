@@ -8,6 +8,7 @@
     "no-unused-vars": 1,
     "linebreak-style": "off",
     "global-require": 1,
-    "import/no-dynamic-require": 1
+    "import/no-dynamic-require": 1,
+    "no-template-curly-in-string": 0
   }
 }

@@ -2,13 +2,20 @@
 * gulpfile
 */
 
-const gulp = require('gulp');
-const install = require('gulp-install');
+import gulp from 'gulp';
+import install from 'gulp-install';
+import rebuild from 'electron-rebuild';
+
 const builder = require('electron-builder');
 
 gulp.task('build-window-binding', () => (
-  gulp.src('./src/components/window-binding/package.json')
-    .pipe(install({ production: true }))
+  // gulp.src('./src/components/window-binding/package.json')
+  // .pipe(install({ production: true }))
+  rebuild({
+    buildPath: `${__dirname}/src/components/window-binding`,
+    electronVersion: '1.7.9',
+    arch: 'x64',
+  })
 ));
 
 gulp.task('build-connect-netsdk', () => (
@@ -16,11 +23,13 @@ gulp.task('build-connect-netsdk', () => (
     .pipe(install({ production: true }))
 ));
 
-gulp.task('build', ['build-window-binding', 'build-connect-netsdk'], () => {
+gulp.task('prebuild', ['build-window-binding', 'build-connect-netsdk']);
+
+gulp.task('build', ['prebuild'], () => {
   builder.build({
     targets: builder.Platform.WINDOWS.createTarget(),
     config: {
-      appId: 'com.ringcentral.sfb',
+      appId: 'com.ringcentral.rc4sfb',
       copyright: 'Copyright © 1999-2017 RingCentral, Inc.',
       compression: 'normal',
       extraResources: [
@@ -33,7 +42,7 @@ gulp.task('build', ['build-window-binding', 'build-connect-netsdk'], () => {
         publisherName: 'RingCentral, Inc.',
         target: [{
           target: 'nsis',
-          arch: ['ia32'],
+          arch: ['ia32'], // ia32,x64
         }],
       },
       nsis: {

@@ -10,6 +10,6 @@
   "license": "UNLICENSED",
   "gypfile": true,
   "dependencies": {
-    "electron-edge": "^6.5.5"
+    "electron-edge-js": "^8.2.9"
   }
 }

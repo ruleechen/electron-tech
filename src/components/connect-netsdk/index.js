@@ -3,7 +3,7 @@
 */
 
 const path = require('path');
-const edge = require('electron-edge');
+const edge = require('electron-edge-js');
 
 let sdkExports;
 
